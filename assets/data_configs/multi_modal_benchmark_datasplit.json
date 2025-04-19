@@ -1,0 +1,31 @@
+{
+  "train": [
+    "garments_5000_35/default_body/rand_0P10PRUZEK",
+    "garments_5000_10/default_body/rand_TSXIKNZ22K"
+  ],
+  "validation": [
+    "garments_5000_13/default_body/rand_AI02YDHFXA",  
+    "garments_5000_13/default_body/rand_CUYR6LQYP4",  
+    "garments_5000_4/default_body/rand_EWA1V02LZ9",  
+    "garments_5000_0/default_body/rand_FEU8BYO98Q",  
+    "garments_5000_11/default_body/rand_G0J479BK8T",  
+    "garments_5000_14/default_body/rand_IY5QIPFSJN",  
+    "garments_5000_33/default_body/rand_LL21GCZ35G",  
+    "garments_5000_10/default_body/rand_TSXIKNZ22K",  
+    "garments_5000_22/default_body/rand_XNG5F5FUY5",  
+    "garments_5000_29/default_body/rand_ZYRQIZSK5R",
+    "garments_5000_21/default_body/rand_710759SSWA",  
+    "garments_5000_22/default_body/rand_ASBG6RLCYO",  
+    "garments_5000_2/default_body/rand_E1UTD3PGFK",  
+    "garments_5000_20/default_body/rand_F4Q1SA8VF6",  
+    "garments_5000_14/default_body/rand_FL77PDSTD6",  
+    "garments_5000_33/default_body/rand_GKEJEQUPDH",  
+    "garments_5000_30/default_body/rand_J856KYVG25",  
+    "garments_5000_12/default_body/rand_QG4ENPB7A7",  
+    "garments_5000_3/default_body/rand_VQDQK5KFZS",  
+    "garments_5000_16/default_body/rand_Z4Z1WAQQPK"],
+  
+  "test": [
+    "garments_5000_31/default_body/rand_6P9PRJRQJ1"
+  ]
+}
