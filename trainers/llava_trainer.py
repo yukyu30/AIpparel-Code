@@ -16,7 +16,7 @@ from omegaconf import DictConfig
 # My modules
 
 from data.data_wrappers.garment_image_data_wrapper import GarmentImageDataWrapper
-from data.datasets.utils import DecodeErrorTypes
+from data.garment_tokenizers.special_tokens import DecodeErrorTypes
 from models.garment_token_regression import GarmentTokenRegressionForCausalLM
 from trainers.utils import dict_to_cuda, AverageMeter, ProgressMeter, master_log, dict_to_cpu, dict_to_dtype
 from eval_scripts.convert_zero_to_torch import get_fp32_state_dict_from_zero_checkpoint

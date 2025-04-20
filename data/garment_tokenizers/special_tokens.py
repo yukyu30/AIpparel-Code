@@ -13,55 +13,13 @@ class DecodeErrorTypes(Enum):
 
 
 
-class SpecialTokensV2(ExtendedEnum):
+class SpecialTokens(ExtendedEnum):
     PANEL_START = "<panel_start>"
     PANEL_END = "<panel_end>"
     PATTERN_START = "<pattern_start>"
     PATTERN_END = "<pattern_end>"
 
-class PanelEdgeTypeV2(ExtendedEnum):
-    MOVE = '<pattern_cmd_MOVE>'
-    LINE = '<pattern_cmd_LINE>'
-    CLOSURE_LINE = '<pattern_cmd_CLINE>'
-    CURVE = '<pattern_cmd_CURVE>'
-    CLOSURE_CURVE = '<pattern_cmd_CCURVE>'
-    
-    def is_closure(self):
-        return self in [PanelEdgeTypeV2.CLOSURE_LINE, PanelEdgeTypeV2.CLOSURE_CURVE]
-    
-    def is_line(self):
-        return self in [PanelEdgeTypeV2.LINE, PanelEdgeTypeV2.CLOSURE_LINE]
-    
-    def is_curve(self):
-        return self in [PanelEdgeTypeV2.CURVE, PanelEdgeTypeV2.CLOSURE_CURVE]
-    
-    def get_num_params(self):
-        if self in [PanelEdgeTypeV2.LINE, PanelEdgeTypeV2.CLOSURE_CURVE]:
-            return 2
-        elif self in [PanelEdgeTypeV2.CURVE]:
-            return 4
-        elif self == PanelEdgeTypeV2.MOVE:
-            return 6
-        else:
-            return 0
-
-
-class SpecialTokens(Enum):
-    PANEL_START: int = 0
-    PANEL_END: int = 1
-    PATTERN_START: int = 2
-    PATTERN_END: int = 3
-    def __str__(self):
-        if self == SpecialTokens.PANEL_START:
-            return "<panel_start>"
-        elif self == SpecialTokens.PANEL_END:
-            return "<panel_end>"
-        elif self == SpecialTokens.PATTERN_START:
-            return "<pattern_start>"
-        elif self == SpecialTokens.PATTERN_END:
-            return "<pattern_end>"
-        
-class PanelEdgeTypeV3(ExtendedEnum):
+class PanelEdgeType(ExtendedEnum):
     MOVE = '<pattern_cmd_MOVE>'
     LINE = '<pattern_cmd_LINE>' 
     CLOSURE_LINE = '<pattern_cmd_CLINE>'
@@ -72,45 +30,42 @@ class PanelEdgeTypeV3(ExtendedEnum):
     ARC = '<pattern_cmd_ARC>'
     CLOSURE_ARC = '<pattern_cmd_CARC>'
     
-    @classmethod
-    def get_sewfactory_token(self):
-        return [PanelEdgeTypeV3.MOVE.value, PanelEdgeTypeV3.LINE.value, PanelEdgeTypeV3.CLOSURE_LINE.value, PanelEdgeTypeV3.CURVE.value, PanelEdgeTypeV3.CLOSURE_CURVE.value]
     def is_closure(self):
-        return self in [PanelEdgeTypeV3.CLOSURE_LINE, PanelEdgeTypeV3.CLOSURE_CURVE, PanelEdgeTypeV3.CLOSURE_CUBIC, PanelEdgeTypeV3.CLOSURE_ARC]
+        return self in [PanelEdgeType.CLOSURE_LINE, PanelEdgeType.CLOSURE_CURVE, PanelEdgeType.CLOSURE_CUBIC, PanelEdgeType.CLOSURE_ARC]
     
     def is_line(self):
-        return self in [PanelEdgeTypeV3.LINE, PanelEdgeTypeV3.CLOSURE_LINE]
+        return self in [PanelEdgeType.LINE, PanelEdgeType.CLOSURE_LINE]
     
     def is_curve(self):
-        return self in [PanelEdgeTypeV3.CURVE, PanelEdgeTypeV3.CLOSURE_CURVE]
+        return self in [PanelEdgeType.CURVE, PanelEdgeType.CLOSURE_CURVE]
     
     def is_cubic_curve(self):  
-        return self in [PanelEdgeTypeV3.CUBIC, PanelEdgeTypeV3.CLOSURE_CUBIC]
+        return self in [PanelEdgeType.CUBIC, PanelEdgeType.CLOSURE_CUBIC]
     
     def is_arc(self):  
-        return self in [PanelEdgeTypeV3.ARC, PanelEdgeTypeV3.CLOSURE_ARC]
+        return self in [PanelEdgeType.ARC, PanelEdgeType.CLOSURE_ARC]
     
     def get_num_params(self):
-        if self in [PanelEdgeTypeV3.LINE, PanelEdgeTypeV3.CLOSURE_CURVE, PanelEdgeTypeV3.CLOSURE_ARC]:
+        if self in [PanelEdgeType.LINE, PanelEdgeType.CLOSURE_CURVE, PanelEdgeType.CLOSURE_ARC]:
             return 2
-        elif self in [PanelEdgeTypeV3.CURVE, PanelEdgeTypeV3.CLOSURE_CUBIC, PanelEdgeTypeV3.ARC]:
+        elif self in [PanelEdgeType.CURVE, PanelEdgeType.CLOSURE_CUBIC, PanelEdgeType.ARC]:
             return 4
-        elif self in [PanelEdgeTypeV3.CUBIC]:
+        elif self in [PanelEdgeType.CUBIC]:
             return 6
-        elif self == PanelEdgeTypeV3.MOVE:
+        elif self == PanelEdgeType.MOVE:
             return 7
         else:
             return 0
     
     def get_closure(self):
-        if self == PanelEdgeTypeV3.LINE:
-            return PanelEdgeTypeV3.CLOSURE_LINE
-        elif self == PanelEdgeTypeV3.CURVE:
-            return PanelEdgeTypeV3.CLOSURE_CURVE
-        elif self == PanelEdgeTypeV3.CUBIC:
-            return PanelEdgeTypeV3.CLOSURE_CUBIC
-        elif self == PanelEdgeTypeV3.ARC:
-            return PanelEdgeTypeV3.CLOSURE_ARC
+        if self == PanelEdgeType.LINE:
+            return PanelEdgeType.CLOSURE_LINE
+        elif self == PanelEdgeType.CURVE:
+            return PanelEdgeType.CLOSURE_CURVE
+        elif self == PanelEdgeType.CUBIC:
+            return PanelEdgeType.CLOSURE_CUBIC
+        elif self == PanelEdgeType.ARC:
+            return PanelEdgeType.CLOSURE_ARC
         else:
             return self
 
@@ -121,33 +76,33 @@ class SpecialTokensIndices:
     panel_end_idx: int
     
     def __init__(self, token2idx: Dict[str, int]):
-        self.pattern_start_idx = token2idx[SpecialTokensV2.PATTERN_START.value]
-        self.pattern_end_idx = token2idx[SpecialTokensV2.PATTERN_END.value]
-        self.panel_start_idx = token2idx[SpecialTokensV2.PANEL_START.value]
-        self.panel_end_idx = token2idx[SpecialTokensV2.PANEL_END.value]
+        self.pattern_start_idx = token2idx[SpecialTokens.PATTERN_START.value]
+        self.pattern_end_idx = token2idx[SpecialTokens.PATTERN_END.value]
+        self.panel_start_idx = token2idx[SpecialTokens.PANEL_START.value]
+        self.panel_end_idx = token2idx[SpecialTokens.PANEL_END.value]
         
     def get_all_indices(self) -> List[int]:
         return [self.pattern_start_idx, self.pattern_end_idx, self.panel_start_idx, self.panel_end_idx]
         
-    def get_token_indices(self, token_type: SpecialTokensV2) -> int:
-        if token_type == SpecialTokensV2.PATTERN_START:
+    def get_token_indices(self, token_type: SpecialTokens) -> int:
+        if token_type == SpecialTokens.PATTERN_START:
             return self.pattern_start_idx
-        elif token_type == SpecialTokensV2.PATTERN_END:
+        elif token_type == SpecialTokens.PATTERN_END:
             return self.pattern_end_idx
-        elif token_type == SpecialTokensV2.PANEL_START:
+        elif token_type == SpecialTokens.PANEL_START:
             return self.panel_start_idx
-        elif token_type == SpecialTokensV2.PANEL_END:
+        elif token_type == SpecialTokens.PANEL_END:
             return self.panel_end_idx
         
-    def get_index_token(self, index: int) -> SpecialTokensV2:
+    def get_index_token(self, index: int) -> SpecialTokens:
         if index == self.pattern_start_idx:
-            return SpecialTokensV2.PATTERN_START
+            return SpecialTokens.PATTERN_START
         elif index == self.pattern_end_idx:
-            return SpecialTokensV2.PATTERN_END
+            return SpecialTokens.PATTERN_END
         elif index == self.panel_start_idx:
-            return SpecialTokensV2.PANEL_START
+            return SpecialTokens.PANEL_START
         elif index == self.panel_end_idx:
-            return SpecialTokensV2.PANEL_END
+            return SpecialTokens.PANEL_END
         
 class PanelEdgeTypeIndices:
     move_idx: int
@@ -161,15 +116,15 @@ class PanelEdgeTypeIndices:
     closure_arc_idx: int
     
     def __init__(self, token2idx: Dict[str, int], rot_as_quat=False):
-        self.move_idx = token2idx.get(PanelEdgeTypeV3.MOVE.value, -1)
-        self.line_idx = token2idx.get(PanelEdgeTypeV3.LINE.value, -1)
-        self.closure_line_idx = token2idx.get(PanelEdgeTypeV3.CLOSURE_LINE.value, -1)
-        self.curve_idx = token2idx.get(PanelEdgeTypeV3.CURVE.value, -1)
-        self.closure_curve_idx = token2idx.get(PanelEdgeTypeV3.CLOSURE_CURVE.value, -1)
-        self.cubic_idx = token2idx.get(PanelEdgeTypeV3.CUBIC.value, -1)
-        self.closure_cubic_idx = token2idx.get(PanelEdgeTypeV3.CLOSURE_CUBIC.value, -1)
-        self.arc_idx = token2idx.get(PanelEdgeTypeV3.ARC.value, -1)
-        self.closure_arc_idx = token2idx.get(PanelEdgeTypeV3.CLOSURE_ARC.value, -1)
+        self.move_idx = token2idx.get(PanelEdgeType.MOVE.value, -1)
+        self.line_idx = token2idx.get(PanelEdgeType.LINE.value, -1)
+        self.closure_line_idx = token2idx.get(PanelEdgeType.CLOSURE_LINE.value, -1)
+        self.curve_idx = token2idx.get(PanelEdgeType.CURVE.value, -1)
+        self.closure_curve_idx = token2idx.get(PanelEdgeType.CLOSURE_CURVE.value, -1)
+        self.cubic_idx = token2idx.get(PanelEdgeType.CUBIC.value, -1)
+        self.closure_cubic_idx = token2idx.get(PanelEdgeType.CLOSURE_CUBIC.value, -1)
+        self.arc_idx = token2idx.get(PanelEdgeType.ARC.value, -1)
+        self.closure_arc_idx = token2idx.get(PanelEdgeType.CLOSURE_ARC.value, -1)
         self.rot_as_quat = rot_as_quat
         
     def get_all_indices(self) -> List[int]:
@@ -197,47 +152,47 @@ class PanelEdgeTypeIndices:
             self.closure_arc_idx
         ] if i != -1]
     
-    def get_token_indices(self, token_type: PanelEdgeTypeV3) -> int:
-        if token_type == PanelEdgeTypeV3.MOVE:
+    def get_token_indices(self, token_type: PanelEdgeType) -> int:
+        if token_type == PanelEdgeType.MOVE:
             return self.move_idx
-        elif token_type == PanelEdgeTypeV3.LINE:
+        elif token_type == PanelEdgeType.LINE:
             return self.line_idx
-        elif token_type == PanelEdgeTypeV3.CLOSURE_LINE:
+        elif token_type == PanelEdgeType.CLOSURE_LINE:
             return self.closure_line_idx
-        elif token_type == PanelEdgeTypeV3.CURVE:
+        elif token_type == PanelEdgeType.CURVE:
             return self.curve_idx
-        elif token_type == PanelEdgeTypeV3.CLOSURE_CURVE:
+        elif token_type == PanelEdgeType.CLOSURE_CURVE:
             return self.closure_curve_idx
-        elif token_type == PanelEdgeTypeV3.CUBIC:
+        elif token_type == PanelEdgeType.CUBIC:
             return self.cubic_idx
-        elif token_type == PanelEdgeTypeV3.CLOSURE_CUBIC:
+        elif token_type == PanelEdgeType.CLOSURE_CUBIC:
             return self.closure_cubic_idx
-        elif token_type == PanelEdgeTypeV3.ARC:
+        elif token_type == PanelEdgeType.ARC:
             return self.arc_idx
-        elif token_type == PanelEdgeTypeV3.CLOSURE_ARC:
+        elif token_type == PanelEdgeType.CLOSURE_ARC:
             return self.closure_arc_idx
         
-    def get_index_token(self, index: int) -> PanelEdgeTypeV3:
+    def get_index_token(self, index: int) -> PanelEdgeType:
         if index == self.move_idx:
-            return PanelEdgeTypeV3.MOVE
+            return PanelEdgeType.MOVE
         elif index == self.line_idx:
-            return PanelEdgeTypeV3.LINE
+            return PanelEdgeType.LINE
         elif index == self.closure_line_idx:
-            return PanelEdgeTypeV3.CLOSURE_LINE
+            return PanelEdgeType.CLOSURE_LINE
         elif index == self.curve_idx:
-            return PanelEdgeTypeV3.CURVE
+            return PanelEdgeType.CURVE
         elif index == self.closure_curve_idx:
-            return PanelEdgeTypeV3.CLOSURE_CURVE
+            return PanelEdgeType.CLOSURE_CURVE
         elif index == self.cubic_idx:
-            return PanelEdgeTypeV3.CUBIC
+            return PanelEdgeType.CUBIC
         elif index == self.closure_cubic_idx:
-            return PanelEdgeTypeV3.CLOSURE_CUBIC
+            return PanelEdgeType.CLOSURE_CUBIC
         elif index == self.arc_idx:
-            return PanelEdgeTypeV3.ARC
+            return PanelEdgeType.ARC
         elif index == self.closure_arc_idx:
-            return PanelEdgeTypeV3.CLOSURE_ARC
+            return PanelEdgeType.CLOSURE_ARC
         
     def get_index_param_num(self, index: int) -> int:
         if index == self.move_idx:
             return 6 if not self.rot_as_quat else 7
-        return PanelEdgeTypeV3(self.get_index_token(index)).get_num_params()
+        return PanelEdgeType(self.get_index_token(index)).get_num_params()

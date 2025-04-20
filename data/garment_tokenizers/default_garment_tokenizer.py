@@ -11,7 +11,7 @@ from data.garment_tokenizers.utils import arc_rad_flags_to_three_point, control_
 from scipy.spatial.transform import Rotation
 from data.datasets.utils import IMAGE_TOKEN_INDEX
 from data.datasets.panel_configs import *
-from data.garment_tokenizers.special_tokens import SpecialTokensV2, SpecialTokensIndices, PanelEdgeTypeV3, PanelEdgeTypeIndices, DecodeErrorTypes
+from data.garment_tokenizers.special_tokens import SpecialTokens, SpecialTokensIndices, PanelEdgeType, PanelEdgeTypeIndices, DecodeErrorTypes
 
 
 class GarmentTokenizer: 
@@ -47,10 +47,10 @@ class GarmentTokenizer:
     def get_all_token_names(self):
         all_names = self.get_bin_token_names()
         if not self.sf_only:
-            all_names += PanelEdgeTypeV3.list()
+            all_names += PanelEdgeType.list()
         else:
-            all_names += PanelEdgeTypeV3.get_sewfactory_token()
-        all_names += SpecialTokensV2.list()
+            all_names += PanelEdgeType.get_sewfactory_token()
+        all_names += SpecialTokens.list()
         if self.encode_stitches_as_tags:
             all_names += self.get_stitch_tag_names()
         return all_names
@@ -120,14 +120,14 @@ class GarmentTokenizer:
         stitches = self.assign_tags_to_stitches(stitches) if self.encode_stitches_as_tags else {}
         if self.include_template_name:
             template_name = pattern.name
-            out_description =  [template_name, SpecialTokensV2.PATTERN_START.value]
+            out_description =  [template_name, SpecialTokens.PATTERN_START.value]
         else:
-            out_description = [SpecialTokensV2.PATTERN_START.value]
+            out_description = [SpecialTokens.PATTERN_START.value]
         for panel_edges, panel_name, panel_tran, panel_rot in zip(pattern_edges, panel_names, panel_translations, panel_rotations):
-            out_description += [SpecialTokensV2.PANEL_START.value, panel_name]
+            out_description += [SpecialTokens.PANEL_START.value, panel_name]
             trans_params = discretize(panel_tran.reshape(-1, 3), self.bin_size, self.gt_stats.translations.shift, self.gt_stats.translations.scale)
             rot_params = discretize(panel_rot.reshape(-1, 3), self.bin_size, self.gt_stats.rotations.shift, self.gt_stats.rotations.scale)
-            out_description += [PanelEdgeTypeV3.MOVE.value] + [bin_tokens[p] for p in trans_params.flatten().tolist()] + [bin_tokens[p] for p in rot_params.flatten().tolist()]
+            out_description += [PanelEdgeType.MOVE.value] + [bin_tokens[p] for p in trans_params.flatten().tolist()] + [bin_tokens[p] for p in rot_params.flatten().tolist()]
             for edge_id, panel_edge in enumerate(panel_edges):
                 edge_type = panel_edge[0]
                 edge_params = discretize(panel_edge[1].reshape(-1, 2), self.bin_size, self.gt_stats.vertices.shift, self.gt_stats.vertices.scale)
@@ -139,8 +139,8 @@ class GarmentTokenizer:
                     # last entry is null
                     tag = stitches.get((panel_name, edge_id), self.num_tags)
                     out_description += [tag_tokens[tag]]
-            out_description += [SpecialTokensV2.PANEL_END.value]
-        out_description += [SpecialTokensV2.PATTERN_END.value]
+            out_description += [SpecialTokens.PANEL_END.value]
+        out_description += [SpecialTokens.PATTERN_END.value]
         return {"description": [out_description]}
     
     def _pattern_as_list_gcd(self, pattern: GCD_NNSewingPattern, as_quat=False, endpoint_first=False):
@@ -153,19 +153,19 @@ class GarmentTokenizer:
             start_point = vertices[panel['edges'][0]["endpoints"]][0].copy()
             for i, edge in enumerate(panel['edges']):
                 endpoints = vertices[edge["endpoints"]]
-                edge_type = PanelEdgeTypeV3.LINE
+                edge_type = PanelEdgeType.LINE
                 params = endpoints[1]
                 if 'curvature' in edge:
                     # in case of an arc
                     if edge['curvature']['type'] == 'circle':
-                        edge_type = PanelEdgeTypeV3.ARC
+                        edge_type = PanelEdgeType.ARC
                         params = edge['curvature']['params']
                         _, _, coords = arc_rad_flags_to_three_point(endpoints[0], endpoints[1], params[0], params[1], params[2], False)
                         params = np.concatenate([coords, endpoints[1]]) if not endpoint_first else np.concatenate([endpoints[1], coords])
 
                     # in case of a curve
                     elif edge['curvature']['type'] == 'cubic':
-                        edge_type = PanelEdgeTypeV3.CUBIC
+                        edge_type = PanelEdgeType.CUBIC
                         params = np.concatenate([control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature']['params'][0]), 
                                                   control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature']['params'][1]), 
                                                   endpoints[1]]) if not endpoint_first else np.concatenate([endpoints[1], 
@@ -182,14 +182,14 @@ class GarmentTokenizer:
 
                             cubic_1 = start + 2. / 3. * (cp - start)
                             cubic_2 = end + 2. / 3. * (cp - end)
-                            edge_type = PanelEdgeTypeV3.CUBIC
+                            edge_type = PanelEdgeType.CUBIC
                             params = np.concatenate([control_to_abs_coord(endpoints[0], endpoints[1], cubic_1), 
                                                     control_to_abs_coord(endpoints[0], endpoints[1], cubic_2), 
                                                     endpoints[1]]) if not endpoint_first else np.concatenate([endpoints[1], 
                                                     control_to_abs_coord(endpoints[0], endpoints[1], cubic_1), 
                                                     control_to_abs_coord(endpoints[0], endpoints[1], cubic_2)])
                         else:
-                            edge_type = PanelEdgeTypeV3.CURVE
+                            edge_type = PanelEdgeType.CURVE
                             params = np.concatenate([control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature']['params'][0]), 
                                                     endpoints[1]]) if not endpoint_first else np.concatenate([endpoints[1], 
                                                     control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature']['params'][0])])
@@ -321,10 +321,10 @@ class GarmentTokenizer:
         text_output = tokenizer.decode(output_ids[output_ids != IMAGE_TOKEN_INDEX], skip_special_tokens=True)
         output_ids = output_ids.cpu().numpy().copy()
         garment_ends = np.where(
-            np.logical_and(output_ids == self.special_token_indices.get_token_indices(SpecialTokensV2.PATTERN_END),
+            np.logical_and(output_ids == self.special_token_indices.get_token_indices(SpecialTokens.PATTERN_END),
             input_mask))[0]
         garment_starts = np.where(
-            np.logical_and(output_ids == self.special_token_indices.get_token_indices(SpecialTokensV2.PATTERN_START),
+            np.logical_and(output_ids == self.special_token_indices.get_token_indices(SpecialTokens.PATTERN_START),
                            input_mask))[0]
         pattern = GCD_NNSewingPattern()
         if len(garment_starts) != len(garment_ends) or \
@@ -346,8 +346,8 @@ class GarmentTokenizer:
             and self.special_token_indices is not None \
             and self.panel_edge_type_indices is not None, "token indices needs to be set before decoding"
         # find the panel starts and ends
-        panel_starts = np.where(token_sequence == self.special_token_indices.get_token_indices(SpecialTokensV2.PANEL_START))[0]
-        panel_ends = np.where(token_sequence == self.special_token_indices.get_token_indices(SpecialTokensV2.PANEL_END))[0]
+        panel_starts = np.where(token_sequence == self.special_token_indices.get_token_indices(SpecialTokens.PANEL_START))[0]
+        panel_ends = np.where(token_sequence == self.special_token_indices.get_token_indices(SpecialTokens.PANEL_END))[0]
         if len(panel_starts) != len(panel_ends) or \
             len(panel_starts) == 0 or \
             len(panel_ends) == 0 or \
@@ -385,13 +385,13 @@ class GarmentTokenizer:
                 edge_type = self.panel_edge_type_indices.get_index_token(panel[command].item())
                 edge_params = panel[command+1:command_end]
                 
-                num_should_predict = edge_type.get_num_params() + int(self.encode_stitches_as_tags and edge_type != PanelEdgeTypeV3.MOVE)
+                num_should_predict = edge_type.get_num_params() + int(self.encode_stitches_as_tags and edge_type != PanelEdgeType.MOVE)
                 if len(edge_params) < num_should_predict:
                     edge_params = np.pad(edge_params, (0, num_should_predict - len(edge_params)), 'constant')
                 elif len(edge_params) > num_should_predict:
                     edge_params = edge_params[:num_should_predict]
                     
-                if edge_type == PanelEdgeTypeV3.MOVE:
+                if edge_type == PanelEdgeType.MOVE:
                     transl_params = self.get_bins_from_indices(edge_params[:3])
                     rot_params = self.get_bins_from_indices(edge_params[3:])
                     transl_params /= self.bin_size 
@@ -414,14 +414,14 @@ class GarmentTokenizer:
                         })
                 edge_dict = {}
                 last_point = np.array(panel_dict['vertices'][-1])
-                if edge_type == PanelEdgeTypeV3.CLOSURE_LINE:
+                if edge_type == PanelEdgeType.CLOSURE_LINE:
                     # Start point is always 0
                     pass
-                elif edge_type == PanelEdgeTypeV3.LINE:
+                elif edge_type == PanelEdgeType.LINE:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     endpoint = edge_params * np.array(self.gt_stats.vertices.scale) + np.array(self.gt_stats.vertices.shift)
-                elif edge_type == PanelEdgeTypeV3.CURVE:
+                elif edge_type == PanelEdgeType.CURVE:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params.reshape(2, 2) * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
@@ -431,7 +431,7 @@ class GarmentTokenizer:
                         "type": 'quadratic',
                         "params": [ctrl_pt]
                     }
-                elif edge_type == PanelEdgeTypeV3.CLOSURE_CURVE:
+                elif edge_type == PanelEdgeType.CLOSURE_CURVE:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
@@ -440,7 +440,7 @@ class GarmentTokenizer:
                         "type": 'quadratic',
                         "params": [ctrl_pt]
                     }
-                elif edge_type == PanelEdgeTypeV3.CUBIC:
+                elif edge_type == PanelEdgeType.CUBIC:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params.reshape(3, 2) * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
@@ -451,7 +451,7 @@ class GarmentTokenizer:
                         "type": 'cubic',
                         "params": [ctrl_pt1, ctrl_pt2]
                     }
-                elif edge_type == PanelEdgeTypeV3.CLOSURE_CUBIC:
+                elif edge_type == PanelEdgeType.CLOSURE_CUBIC:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params.reshape(2, 2) * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
@@ -461,27 +461,27 @@ class GarmentTokenizer:
                         "type": 'cubic',
                         "params": [ctrl_pt1, ctrl_pt2]
                     }
-                elif edge_type == PanelEdgeTypeV3.ARC:
+                elif edge_type == PanelEdgeType.ARC:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params.reshape(2, 2) * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
                     abs_ctrl_pt, endpoint = edge_params[0], edge_params[1]
                     if is_colinear(last_point, endpoint, abs_ctrl_pt):
                         # arc became colinear due to rounding errors. Drawing a line instead.
-                        edge_type = PanelEdgeTypeV3.LINE
+                        edge_type = PanelEdgeType.LINE
                     else:
                         _, _, rad, large_arc, right = arc_from_three_points(last_point, endpoint, abs_ctrl_pt)
                         edge_dict['curvature'] = {
                             "type": 'circle',
                             "params": [rad, int(large_arc), int(right)]
                         }
-                elif edge_type == PanelEdgeTypeV3.CLOSURE_ARC:
+                elif edge_type == PanelEdgeType.CLOSURE_ARC:
                     edge_params = self.get_bins_from_indices(edge_params)
                     edge_params = edge_params / self.bin_size
                     edge_params = edge_params * self.gt_stats.vertices.scale + self.gt_stats.vertices.shift
                     if is_colinear(last_point, np.array([0, 0]), edge_params):
                         # arc became colinear due to rounding errors. Drawing a line instead.
-                        edge_type = PanelEdgeTypeV3.CLOSURE_LINE
+                        edge_type = PanelEdgeType.CLOSURE_LINE
                     else:
                         _, _, rad, large_arc, right = arc_from_three_points(last_point, np.array([0, 0]), edge_params)
                         edge_dict['curvature'] = {

@@ -8,21 +8,13 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-# Correct dependencies on Win
-# https://stackoverflow.com/questions/46265677/get-cairosvg-working-in-windows
-# NOTE: I took the dlls from Inkscape
-# NOTE: paths are relative to the running location, not to the current file
-if 'Windows' in os.environ.get('OS',''):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    os.environ['path'] += f';{os.path.abspath(dir_path + "/cairo_dlls/")}'
-
 import cairosvg
 import svgpathtools as svgpath
 
 import matplotlib.pyplot as plt
 # my
-from data.patterns.gcd_pattern import core
-from data.patterns.gcd_pattern.utils import *
+from data.patterns import core
+from data.patterns.utils import *
 
 
 class VisPattern(core.ParametrizedPattern):

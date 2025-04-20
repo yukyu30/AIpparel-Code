@@ -11,9 +11,9 @@ import random
 
 # My
 
-from data.patterns.gcd_pattern import rotation as rotation_tools
-from data.patterns.gcd_pattern.utils import arc_from_three_points, arc_rad_flags_to_three_point
-from data.datasets.utils import PanelEdgeTypeV3
+from data.patterns import rotation as rotation_tools
+from data.patterns.utils import arc_from_three_points, arc_rad_flags_to_three_point
+from data.garment_tokenizers.special_tokens import PanelEdgeType
 standard_filenames = [
     'specification',  # e.g. used by dataset generation
     'template', 
@@ -239,22 +239,22 @@ class BasicPattern(object):
                 start_point, end_point = edge_verts[0], edge_verts[1]
                 params = edge_dict['curvature']['params']
                 _, _, coords = arc_rad_flags_to_three_point(start_point, end_point, params[0], params[1], params[2], False)
-                out = (PanelEdgeTypeV3.ARC, np.concatenate([coords, end_point])) if not is_last else (PanelEdgeTypeV3.CLOSURE_ARC, coords)
+                out = (PanelEdgeType.ARC, np.concatenate([coords, end_point])) if not is_last else (PanelEdgeType.CLOSURE_ARC, coords)
 
             # in case of a curve
             elif edge_dict['curvature']['type'] == 'cubic':
-                out = (PanelEdgeTypeV3.CC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1]), edge_verts[1]])) \
-                     if not is_last else (PanelEdgeTypeV3.CLOSURE_CC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1])]))
+                out = (PanelEdgeType.CC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1]), edge_verts[1]])) \
+                     if not is_last else (PanelEdgeType.CLOSURE_CUBIC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1])]))
                 
             elif edge_dict['curvature']['type'] == 'quadratic':
                 # Convert to cubic for uniformity
                 # https://stackoverflow.com/questions/3162645/convert-a-quadratic-bezier-to-a-cubic-one
                 # NOTE: Assuming relative coor
                 
-                out = (PanelEdgeTypeV3.CQ, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), edge_verts[1]])) \
-                    if not is_last else (PanelEdgeTypeV3.CLOSURE_CQ, BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]))
+                out = (PanelEdgeType.CURVE, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), edge_verts[1]])) \
+                    if not is_last else (PanelEdgeType.CLOSURE_CURVE, BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]))
         else:
-            out = (PanelEdgeTypeV3.LINE, edge_verts[1]) if not is_last else (PanelEdgeTypeV3.CLOSURE_LINE, edge_verts[0])
+            out = (PanelEdgeType.LINE, edge_verts[1]) if not is_last else (PanelEdgeType.CLOSURE_LINE, edge_verts[0])
 
         return out
     

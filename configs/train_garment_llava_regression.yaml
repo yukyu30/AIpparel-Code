@@ -3,12 +3,11 @@
 
 # 0.5 * stitch cls loss (focal loss) + 0.005 * stitch ce loss + 5 * panel loss
 defaults: 
-  - data_wrapper: qva_garment_token_data_wrapper
+  - data_wrapper: qva_garmentcodedata_token_data_wrapper
   - trainer: llava_garment_token_trainer
   - experiment: experiment
   - model: llava_garment_token
   - _self_
-  - override data_wrapper/dataset/garment_tokenizer: regression_garment_tokenizer
 
 model:
   use_mm_start_end: True
@@ -17,8 +16,6 @@ model:
 experiment:
   run_name: finetune_llava_garment_token
 
-data_wrapper:
-  collate_fn: data.data_wrappers.collate_fns.collate_fn_regression
 
 from_start: False
 model_max_length: 2100

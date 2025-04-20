@@ -10,7 +10,7 @@ from transformers.modeling_outputs import ModelOutput, CausalLMOutputWithPast
 from .llava.model.language_model.llava_llama import (LlavaLlamaForCausalLM,
                                                      LlavaLlamaModel)
 from data.datasets.utils import IMAGE_TOKEN_INDEX
-from data.garment_tokenizers.special_tokens import PanelEdgeTypeIndices, PanelEdgeTypeV3
+from data.garment_tokenizers.special_tokens import PanelEdgeTypeIndices, PanelEdgeType
 from .encodings import SinusoidalEncoding, DiscreteEncoding
 from data.datasets.panel_configs import StandardizeConfig
 
@@ -116,8 +116,8 @@ class GarmentTokenRegressionMetaModel:
         for p in self.transformation_fc.parameters():
             p.requires_grad = True
             
-        line_curve_out_dim = 4 if self.config.panel_edge_indices.get_token_indices(PanelEdgeTypeV3.CUBIC) == -1 else 6
-        if self.config.panel_edge_indices.get_token_indices(PanelEdgeTypeV3.ARC) != -1:
+        line_curve_out_dim = 4 if self.config.panel_edge_indices.get_token_indices(PanelEdgeType.CUBIC) == -1 else 6
+        if self.config.panel_edge_indices.get_token_indices(PanelEdgeType.ARC) != -1:
             line_curve_out_dim += 2
         
         self.line_curve_fc = make_mlp(
@@ -129,7 +129,7 @@ class GarmentTokenRegressionMetaModel:
         self.line_curve_fc.train()
         for p in self.line_curve_fc.parameters():
             p.requires_grad = True
-        # if self.config.panel_edge_indices.get_token_indices(PanelEdgeTypeV3.ARC) != -1:
+        # if self.config.panel_edge_indices.get_token_indices(PanelEdgeType.ARC) != -1:
         #     arc_fc = nn.Sequential(*[
         #         nn.Linear(in_dim, in_dim),
         #         nn.ReLU(inplace=True),
@@ -339,7 +339,7 @@ class GarmentTokenRegressionForCausalLM(LlavaLlamaForCausalLM):
     ):
         image_embeds_len=255
         edge_mask = torch.isin(input_ids, torch.tensor(self.panel_edge_indices.get_all_edge_indices()).to(input_ids))
-        transf_mask = input_ids == self.panel_edge_indices.get_token_indices(PanelEdgeTypeV3.MOVE)
+        transf_mask = input_ids == self.panel_edge_indices.get_token_indices(PanelEdgeType.MOVE)
             
         if IMAGE_TOKEN_INDEX in input_ids and pad_for_image:
             new_edge_mask = torch.zeros([edge_mask.shape[0], edge_mask.shape[1]+image_embeds_len]).bool().cuda()
@@ -416,13 +416,13 @@ class GarmentTokenRegressionForCausalLM(LlavaLlamaForCausalLM):
                     edge_embeds = last_hidden_state[mask]
                     if edge_type.is_closure():
                         endpoints[mask] = self.zero_tensor.to(edge_embeds)
-                    if edge_type == PanelEdgeTypeV3.CUBIC:
+                    if edge_type == PanelEdgeType.CUBIC:
                         endpoints[mask] = self.model.line_curve_fc(edge_embeds)[:, :2]
-                    elif edge_type == PanelEdgeTypeV3.ARC:
+                    elif edge_type == PanelEdgeType.ARC:
                         endpoints[mask] = self.model.line_curve_fc(edge_embeds)[:, :2]
-                    elif edge_type == PanelEdgeTypeV3.LINE:
+                    elif edge_type == PanelEdgeType.LINE:
                         endpoints[mask] = self.model.line_curve_fc(edge_embeds)[:, :2]
-                    elif edge_type == PanelEdgeTypeV3.CURVE:
+                    elif edge_type == PanelEdgeType.CURVE:
                         endpoints[mask] = self.model.line_curve_fc(edge_embeds)[:, :2]
                         
         
@@ -576,29 +576,29 @@ class GarmentTokenRegressionForCausalLM(LlavaLlamaForCausalLM):
                     continue
                 panel_embeds = last_hidden_state[mask]
                 edge_type = self.panel_edge_indices.get_index_token(ind)
-                if edge_type == PanelEdgeTypeV3.MOVE:
+                if edge_type == PanelEdgeType.MOVE:
                     panel_params = self.model.transformation_fc(panel_embeds)
                 else:
                     panel_params = self.model.line_curve_fc(panel_embeds)
-                    if edge_type == PanelEdgeTypeV3.CUBIC:
+                    if edge_type == PanelEdgeType.CUBIC:
                         panel_params = panel_params[:, :-2]
-                    elif edge_type == PanelEdgeTypeV3.ARC:
+                    elif edge_type == PanelEdgeType.ARC:
                         panel_params = torch.cat([panel_params[:, :2], panel_params[:, 6:]], dim=-1)
-                    elif edge_type == PanelEdgeTypeV3.LINE:
+                    elif edge_type == PanelEdgeType.LINE:
                         panel_params = panel_params[:, :2]
-                    elif edge_type == PanelEdgeTypeV3.CURVE:
+                    elif edge_type == PanelEdgeType.CURVE:
                         panel_params = panel_params[:, :4]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_CURVE:
+                    elif edge_type == PanelEdgeType.CLOSURE_CURVE:
                         panel_params = panel_params[:, 2:4]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_ARC:
+                    elif edge_type == PanelEdgeType.CLOSURE_ARC:
                         panel_params = panel_params[:, 6:]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_CUBIC:
+                    elif edge_type == PanelEdgeType.CLOSURE_CUBIC:
                         panel_params = panel_params[:, 2:6]
                     
                 param_preds[ind][param_target_masks[ind]] = panel_params 
                 if self.gt_stats is not None and self.denormalize_for_loss:
-                    param_preds[ind] = denormalize(self.gt_stats, param_preds[ind], is_transf=edge_type == PanelEdgeTypeV3.MOVE)
-                    param_targets[ind] = denormalize(self.gt_stats, param_targets[ind], is_transf=edge_type == PanelEdgeTypeV3.MOVE)
+                    param_preds[ind] = denormalize(self.gt_stats, param_preds[ind], is_transf=edge_type == PanelEdgeType.MOVE)
+                    param_targets[ind] = denormalize(self.gt_stats, param_targets[ind], is_transf=edge_type == PanelEdgeType.MOVE)
                 loss = torch.sum((param_preds[ind] - param_targets[ind]) ** 2, -1).sum(1) / (torch.sum(param_target_masks[ind], 1) + 1e-5)
                 total_edge_loss += loss
                 edge_type_losses[f"{self.panel_edge_indices.get_index_token(ind).value}_loss"] = loss.mean()
@@ -682,23 +682,23 @@ class GarmentTokenRegressionForCausalLM(LlavaLlamaForCausalLM):
                     continue
                 panel_embeds = last_hidden_state[mask]
                 edge_type = self.panel_edge_indices.get_index_token(ind)
-                if edge_type == PanelEdgeTypeV3.MOVE:
+                if edge_type == PanelEdgeType.MOVE:
                     panel_params = self.model.transformation_fc(panel_embeds)
                 else:
                     panel_params = self.model.line_curve_fc(panel_embeds)
-                    if edge_type == PanelEdgeTypeV3.CUBIC:
+                    if edge_type == PanelEdgeType.CUBIC:
                         panel_params = panel_params[:, :-2]
-                    elif edge_type == PanelEdgeTypeV3.ARC:
+                    elif edge_type == PanelEdgeType.ARC:
                         panel_params = torch.cat([panel_params[:, :2], panel_params[:, 6:]], dim=-1)
-                    elif edge_type == PanelEdgeTypeV3.LINE:
+                    elif edge_type == PanelEdgeType.LINE:
                         panel_params = panel_params[:, :2]
-                    elif edge_type == PanelEdgeTypeV3.CURVE:
+                    elif edge_type == PanelEdgeType.CURVE:
                         panel_params = panel_params[:, :4]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_CURVE:
+                    elif edge_type == PanelEdgeType.CLOSURE_CURVE:
                         panel_params = panel_params[:, 2:4]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_ARC:
+                    elif edge_type == PanelEdgeType.CLOSURE_ARC:
                         panel_params = panel_params[:, 6:]
-                    elif edge_type == PanelEdgeTypeV3.CLOSURE_CUBIC:
+                    elif edge_type == PanelEdgeType.CLOSURE_CUBIC:
                         panel_params = panel_params[:, 2:6]
                         
                 param_preds[ind] = panel_params

@@ -8,8 +8,6 @@ import torch
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from scipy.special import comb
 import svgpathtools as svgpath
 from scipy.sparse import csr_matrix
 
@@ -17,11 +15,11 @@ if sys.version_info[0] >= 3:
     from scipy.spatial.transform import Rotation as scipy_rot  # Not available in scipy 0.19.1 installed for Maya
 
 # My modules
-from core import panel_spec_template
-from wrappers import VisPattern
-import rotation as rotation_tools
+from .core import panel_spec_template
+from .wrappers import VisPattern
+from . import rotation as rotation_tools
 # For arc conversion
-from utils import arc_from_three_points, list_to_c, c_to_list
+from .utils import arc_from_three_points, list_to_c, c_to_list
 
 # ------- Custom Errors --------
 class EmptyPanelError(Exception):
