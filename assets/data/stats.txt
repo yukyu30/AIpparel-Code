@@ -1,5 +1,0 @@
-mean: [1.14394751e-17, 5.51454519e-19, 1.63532172e-01, 7.63001275e-02]
-std: [26.63403268, 29.54941741,  0.27706816,  0.2372687 ]
-max_clip:  [ 3.93797993,  2.79317152,  2.83853553,  3.74875851]
-min_clip: [-1.69588947, -2.79317152, -0.59022361, -2.00742926]
-class_stats: {'jumpsuit_sleeveless': 3824, 'wb_dress_sleeveless': 1939, 'dress_sleeveless': 2503, 'tee_sleeveless': 3388, 'skirt_2_panels': 1101, 'pants_straight_sides': 1485, 'tee': 2046, 'skirt_8_panels': 1078, 'wb_pants_straight': 1015, 'skirt_4_panels': 755}

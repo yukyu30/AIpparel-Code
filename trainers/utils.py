@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import List
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -32,8 +32,12 @@ def dict_to_cpu(input_dict):
             input_dict[k] = dict_to_cpu(input_dict[k])
     return input_dict
 
-def dict_to_dtype(input_dict, dtype=torch.float32):
+def dict_to_dtype(input_dict, dtype=torch.float32, target_keys=None):
     for k, v in input_dict.items():
+        if target_keys is not None:
+            if k not in target_keys:
+                continue
+
         if isinstance(input_dict[k], torch.Tensor):
             input_dict[k] = v.to(dtype=dtype)
         elif (
@@ -43,7 +47,7 @@ def dict_to_dtype(input_dict, dtype=torch.float32):
         ):
             input_dict[k] = [ele.to(dtype=dtype) for ele in v]
         elif isinstance(input_dict[k], dict):
-            input_dict[k] = dict_to_dtype(input_dict[k])
+            input_dict[k] = dict_to_dtype(input_dict[k], dtype)
     return input_dict
 
 
@@ -54,28 +58,7 @@ class Summary(Enum):
     COUNT = 3
 
 
-class ProgressMeter(object):
-    def __init__(self, logger, local_rank, num_batches, meters, prefix=""):
-        self.logger = logger
-        self.local_rank = local_rank
-        self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
-        self.meters = meters
-        self.prefix = prefix
 
-    def display(self, batch):
-        entries = [self.prefix + self.batch_fmtstr.format(batch)]
-        entries += [str(meter) for meter in self.meters]
-        master_log(self.local_rank, self.logger, "\t".join(entries))
-
-    def display_summary(self):
-        entries = [" *"]
-        entries += [meter.summary() for meter in self.meters]
-        master_log(self.local_rank, self.logger, " ".join(entries))
-
-    def _get_batch_fmtstr(self, num_batches):
-        num_digits = len(str(num_batches // 1))
-        fmt = "{:" + str(num_digits) + "d}"
-        return "[" + fmt + "/" + fmt.format(num_batches) + "]"
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -141,6 +124,24 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
     
     
+class ProgressMeter(object):
+    def __init__(self, logger, local_rank, meters: List[AverageMeter], prefix=""):
+        self.logger = logger
+        self.local_rank = local_rank
+        self.meters = meters
+        self.prefix = prefix
+
+    def display(self, step):
+        entries = [self.prefix.format(step)]
+        entries += [str(meter) for meter in self.meters]
+        master_log(self.local_rank, self.logger, "\t".join(entries))
+
+    def display_summary(self):
+        entries = [" *"]
+        entries += [meter.summary() for meter in self.meters]
+        master_log(self.local_rank, self.logger, " ".join(entries))
+        
+        
 def master_log(local_rank: int, logger: logging.Logger, *args):
     if local_rank == 0:
         logger.info(*args)

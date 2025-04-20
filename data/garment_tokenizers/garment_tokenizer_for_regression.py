@@ -11,12 +11,11 @@ log = logging.getLogger(__name__)
 from transformers import PreTrainedTokenizer
 from data.datasets.garmentcodedata.garmentcode_dataset import GarmentCodeData
 from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern as GCD_NNSewingPattern
-from data.garment_tokenizers.utils import arc_rad_flags_to_three_point, control_to_abs_coord, discretize, control_to_relative_coord, arc_from_three_points, panel_universal_transtation, is_colinear
+from data.garment_tokenizers.utils import control_to_relative_coord, arc_from_three_points, panel_universal_transtation, is_colinear
 from scipy.spatial.transform import Rotation
 from data.datasets.utils import IMAGE_TOKEN_INDEX
-from data.pattern_converter import NNSewingPattern as SF_SewingPattern
 from data.datasets.panel_configs import *
-from data.garment_tokenizers.special_tokens import SpecialTokensV2, SpecialTokensIndices, PanelEdgeTypeV3, PanelEdgeTypeIndices, DecodeErrorTypes
+from data.garment_tokenizers.special_tokens import SpecialTokensV2, PanelEdgeTypeV3, PanelEdgeTypeIndices, DecodeErrorTypes
 from .default_garment_tokenizer import GarmentTokenizer
 
 class GarmentTokenizerForRegression(GarmentTokenizer): 
@@ -46,32 +45,16 @@ class GarmentTokenizerForRegression(GarmentTokenizer):
     def set_token_indices(self, token2idx: Dict[str, int]):
         super().set_token_indices(token2idx)
         self.panel_edge_type_indices = PanelEdgeTypeIndices(token2idx, rot_as_quat=True)
-    
-    def _pattern_as_list_sf(self, pattern: SF_SewingPattern, as_quat=False, endpoint_first=True):
-        panel_order = pattern.panel_order(filter_nones=True)
-        panel_edges, panel_rotations, panel_translations = [], [], []
-        panel_names = []
-        for panel_name in panel_order:
-            panel_edge, rotation, translation = pattern.panel_as_list(panel_name, rot_in_euler=not as_quat, version=3, endpoint_first=endpoint_first)
-            panel_edges.append(panel_edge)
-            panel_rotations.append(rotation)
-            panel_translations.append(translation)
-            p_name = pattern.panel_classifier.class_name(pattern.panel_classifier.class_idx(pattern.template_name, panel_name)) if pattern.panel_classifier is not None else panel_name
-            panel_names.append(p_name)
 
-        return panel_edges, panel_names, panel_rotations, panel_translations, pattern.pattern['stitches']
     
-    def encode(self, pattern: Union[GCD_NNSewingPattern, SF_SewingPattern], return_type="pt"):
+    def encode(self, pattern: GCD_NNSewingPattern, return_type="pt"):
         assert self.panel_edge_type_indices is not None, "Panel edge type indices not set"
         assert self.special_token_indices is not None, "Special token indices not set"
-        if self.sf_only:
-            assert isinstance(pattern, SF_SewingPattern), "Pattern must be an instance of SF_SewingPattern"
             
         if self.encode_stitches_as_tags:
             tag_tokens = self.get_stitch_tag_names()
             
-        pattern_edges, panel_names, panel_rotations, panel_translations, stitches = self._pattern_as_list_sf(pattern, as_quat=True, endpoint_first=True) \
-            if isinstance(pattern, SF_SewingPattern) else self._pattern_as_list_gcd(pattern, as_quat=True, endpoint_first=True)
+        pattern_edges, panel_names, panel_rotations, panel_translations, stitches = self._pattern_as_list_gcd(pattern, as_quat=True, endpoint_first=True)
         stitches = self.assign_tags_to_stitches(stitches) if self.encode_stitches_as_tags else {}
         params_output = defaultdict(list)
         endpoints = []

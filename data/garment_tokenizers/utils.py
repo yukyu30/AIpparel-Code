@@ -2,7 +2,6 @@ import numpy as np
 from numpy.linalg import norm
 from typing import List
 import math as m
-import warnings
 
 # Thanks to https://www.meccanismocomplesso.org/en/3d-rotations-and-euler-angles-in-python/ for the code
 def _Rx(theta):

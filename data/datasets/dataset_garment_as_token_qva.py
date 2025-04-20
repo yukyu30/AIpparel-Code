@@ -14,15 +14,12 @@ from tqdm import tqdm
 
 import torch
 import cv2
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import Dataset, Subset
 from transformers import CLIPImageProcessor
 from transformers import PreTrainedTokenizer
 import torch.nn.functional as F
-from torchvision.io import read_image
 from data.transforms import ResizeLongestSide
 import torchvision.transforms as T
-from dataclasses import dataclass
-from enum import Enum
 import pickle
 from typing import List, Dict, Tuple, Union, Any
 from data.garment_tokenizers.default_garment_tokenizer import GarmentTokenizer
@@ -38,8 +35,8 @@ sys.path.insert(0, pkg_path)
 
 
 # My modules
-from data.pattern_converter import NNSewingPattern, InvalidPatternDefError, EmptyPanelError
-from data.panel_classes import PanelClasses
+from data.patterns.pattern_converter import NNSewingPattern, InvalidPatternDefError
+from data.patterns.panel_classes import PanelClasses
 
 from data.datasets.panel_configs import *
 from models.llava import conversation as conversation_lib

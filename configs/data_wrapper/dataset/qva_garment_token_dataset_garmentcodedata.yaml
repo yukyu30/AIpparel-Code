@@ -7,9 +7,9 @@ garment_tokenizer:
   include_template_name: False
   num_tags: 108
 
-root_dir: /miele/timur/garmentcodedata
-editing_dir: /mnt/gs/sci-garment/garmentcodedata_editing
-caption_dir: /mnt/gs/sci-garment/long-caption-processed
+root_dir: /miele/data/gcd/garmentcodedata
+editing_dir: /miele/data/gcd/garmentcodedata_editing
+caption_dir: /miele/data/gcd/long-caption-processed
 # sampling_rate: [0,0,0,0,1]
 editing_flip_prob: 0.5
 sampling_rate: [0.3, 0.1, 0.1, 0.4, 0.1]

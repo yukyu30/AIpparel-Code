@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import Literal, List, Optional, Union, Callable
 from argparse import Namespace
 from torch.utils.data import DataLoader
-from data.data_loaders.infinite_loader import InfiniteDataLoader
 import logging 
 import torch.nn.functional as F
 import time

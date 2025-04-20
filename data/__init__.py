@@ -1,1 +1,0 @@
-from .pattern_converter import InvalidPatternDefError

@@ -1,30 +1,17 @@
 
 import torch, numpy as np, os, sys
-from pathlib import Path 
-from enum import Enum
 from typing import List, Tuple, Dict, Union, Any
-
-# TODO What is this part doing? 
-os.system('export PYTHONPATH=""')
-currentdir = os.path.dirname(os.path.realpath(__file__))
-grandparentdir = os.path.dirname(os.path.dirname(currentdir))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir) 
-sys.path.insert(0, grandparentdir)
-root_path = os.path.dirname(os.path.dirname(os.path.abspath(parentdir)))
 
 import logging 
 log = logging.getLogger(__name__)   
 from transformers import PreTrainedTokenizer
 from data.datasets.garmentcodedata.garmentcode_dataset import GarmentCodeData
-from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern as GCD_NNSewingPattern
+from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern as GCD_NNSewingPattern, EmptyPanelError
 from data.garment_tokenizers.utils import arc_rad_flags_to_three_point, control_to_abs_coord, discretize, control_to_relative_coord, arc_from_three_points, panel_universal_transtation, is_colinear
 from scipy.spatial.transform import Rotation
 from data.datasets.utils import IMAGE_TOKEN_INDEX
-from data.pattern_converter import NNSewingPattern as SF_SewingPattern
 from data.datasets.panel_configs import *
 from data.garment_tokenizers.special_tokens import SpecialTokensV2, SpecialTokensIndices, PanelEdgeTypeV3, PanelEdgeTypeIndices, DecodeErrorTypes
-from data.pattern_converter import InvalidPatternDefError, EmptyPanelError
 
 
 class GarmentTokenizer: 
@@ -124,15 +111,12 @@ class GarmentTokenizer:
                 new_stitch_dict[(stitch['panel'], stitch['edge'])] = tag_ids[stitch_id]
         return new_stitch_dict
     
-    def encode(self, pattern: Union[GCD_NNSewingPattern, SF_SewingPattern]):
-        if self.sf_only:
-            assert isinstance(pattern, SF_SewingPattern), "Pattern must be an instance of SF_SewingPattern"
-            
+    def encode(self, pattern: GCD_NNSewingPattern):
         bin_tokens = self.get_bin_token_names() 
         if self.encode_stitches_as_tags:
             tag_tokens = self.get_stitch_tag_names()
             
-        pattern_edges, panel_names, panel_rotations, panel_translations, stitches = self._pattern_as_list_sf(pattern) if isinstance(pattern, SF_SewingPattern) else self._pattern_as_list_gcd(pattern)
+        pattern_edges, panel_names, panel_rotations, panel_translations, stitches = self._pattern_as_list_gcd(pattern)
         stitches = self.assign_tags_to_stitches(stitches) if self.encode_stitches_as_tags else {}
         if self.include_template_name:
             template_name = pattern.name
@@ -330,43 +314,6 @@ class GarmentTokenizer:
             sorted_inds
         )
             
-    def _pattern_as_list_sf(self, pattern: SF_SewingPattern, as_quat=False, endpoint_first=False):
-        panel_order = pattern.panel_order(filter_nones=True)
-        all_panel_edges, panel_rotations, panel_translations = [], [], []
-        for panel_name in panel_order:
-            panel_edges = []
-            panel = pattern.pattern['panels'][panel_name]
-            vertices = np.array(panel['vertices'])
-            start_point = vertices[panel['edges'][0]["endpoints"]][0].copy()
-            for i, edge in enumerate(panel['edges']):
-                endpoints = vertices[edge["endpoints"]]
-                edge_type = PanelEdgeTypeV3.LINE
-                params = endpoints[1]
-                if "curvature" in edge:
-                    edge_type = PanelEdgeTypeV3.CURVE
-                    params = np.concatenate([control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature']), 
-                                            endpoints[1]]) if not endpoint_first else np.concatenate([endpoints[1], 
-                                            control_to_abs_coord(endpoints[0], endpoints[1], edge['curvature'])])
-                    
-                params = params.reshape(-1, 2) - start_point
-                params = params.flatten()
-                if i == len(panel['edges']) - 1:
-                    edge_type = edge_type.get_closure()
-                    # params = params[:-2]
-                    params = params[:-2] if not endpoint_first else params[2:] # discard the last point
-                panel_edges.append((edge_type, params))
-            
-            # ----- 3D placement convertion  ------
-            # Global Translation (more-or-less stable across designs)
-            translation, _ = panel_universal_transtation(vertices, panel['rotation'], panel['translation'])
-            panel_translations.append(translation)
-            panel_rotations.append(np.array(panel['rotation']) if not as_quat else Rotation.from_euler('xyz', panel['rotation'], degrees=True).as_quat())
-            all_panel_edges.append(panel_edges)
-        
-        return all_panel_edges, panel_order, panel_rotations, panel_translations, pattern.pattern['stitches']
-    
-    
-
     def decode(self, output_dict: Dict[str, Any], tokenizer: PreTrainedTokenizer): 
         """Decode output ids to text"""
         output_ids = output_dict['output_ids']
