@@ -14,7 +14,7 @@
 ![teaser](assets/imgs/teaser.jpg)
 
 ## Dataset 
-Please download our GarmentCodeData-Multimodal dataset [here](https://huggingface.co/georgeNakayama/AIpparel), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions. Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/qva_garment_token_dataset_garmentcodedata.yaml).
+Please download our [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (**gcd_mm_editing.zip** and **gcd_mm_captions.zip**), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions. Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/qva_garment_token_dataset_garmentcodedata.yaml) to point to the unzipped directories. 
 
 ## Citation
 
