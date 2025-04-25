@@ -1,25 +1,19 @@
 import numpy as np
-from scipy.sparse import csr_matrix
 import os
 from pathlib import Path
-import shutil
-import pickle 
 from collections import defaultdict
-import sys
-import igl
 import torch
-from torch.utils.data import DataLoader, Dataset, Subset
-from scipy.spatial.transform import Rotation as scipy_rot
+from torch.utils.data import Dataset
 from typing import List, Dict, Tuple, Union, Optional, Literal
 from transformers import CLIPImageProcessor, PreTrainedTokenizer
+import types
 import cv2
 import random
 import json
 # My
 from data.garment_tokenizers.default_garment_tokenizer import GarmentTokenizer
 import data.datasets.garmentcodedata.transforms as transforms
-from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern, InvalidPatternDefError
-from data.datasets.garmentcodedata.external.customconfig import Properties
+from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern
 from data.datasets.garmentcodedata.panel_classes import PanelClasses
 from data.datasets.utils import (SHORT_QUESTION_LIST, 
                                  ANSWER_LIST, 
@@ -31,6 +25,19 @@ from data.datasets.utils import (SHORT_QUESTION_LIST,
                                  )
 from models.llava import conversation as conversation_lib
 from data.transforms import ResizeLongestSide
+from enum import Enum
+
+class DataType(Enum):
+    IMAGE = 0
+    DESCRIPTIVE_TEXT = 1
+    SPECULATIVE_TEXT = 2
+    IMAGE_TEXT = 3  
+    EDITING = 4
+    def requires_text(self):
+        return self in [DataType.IMAGE_TEXT, DataType.DESCRIPTIVE_TEXT, DataType.SPECULATIVE_TEXT]
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c, cls))
 
 ## incorperating the changes from maria's three dataset classes into a new
 ## dataset class. this also includes features from sewformer, for interoperability
@@ -59,12 +66,8 @@ class GarmentCodeDatasetQVA(Dataset):
         #################################
         # init from the basedataset class
         self.root_path = Path(root_dir)
-        self.config = {}
-        self.config['class'] = self.__class__.__name__
-
 
         self.datapoints_names = []
-        self.dataset_start_ids = [] # (folder, start_id) tuples -- ordered by start id
         self.panel_classes = []
         self.dict_panel_classes = defaultdict(int)
         self.garment_tokenizer = garment_tokenizer
@@ -89,7 +92,6 @@ class GarmentCodeDatasetQVA(Dataset):
                 load_by_dataname = [line.strip() for line in f.readlines()]
         self.datapoints_names = load_by_dataname
         # Wrong Don't use
-        self.dataset_start_ids = [(dn, i) for i, dn in enumerate(load_by_dataname)]
         
            
                 
@@ -141,22 +143,6 @@ class GarmentCodeDatasetQVA(Dataset):
 
         return all_classes
 
-    # added from maria
-    def _read_pattern(self, datapoint_name, folder_elements, 
-                      pad_panels_to_len=None, pad_panel_num=None, pad_stitches_num=None,
-                      with_placement=False, with_stitches=False, with_stitch_tags=False):
-        """Read given pattern in tensor representation from file"""
-        spec_list = [file for file in folder_elements if 'specification.json' in file]
-        if not spec_list:
-            raise RuntimeError('GarmentBaseDataset::Error::*specification.json not found for {}'.format(datapoint_name))
-        pattern = NNSewingPattern(
-            self.root_path / datapoint_name / spec_list[0], 
-            panel_classifier=self.panel_classifier, 
-            template_name=self.template_name(datapoint_name))
-        return pattern.pattern_as_tensors(
-            pad_panels_to_len, pad_panels_num=pad_panel_num, pad_stitches_num=pad_stitches_num,
-            with_placement=with_placement, with_stitches=with_stitches, 
-            with_stitch_tags=with_stitch_tags)
 
     # added from maria 
     def __len__(self):
@@ -199,7 +185,7 @@ class GarmentCodeDatasetQVA(Dataset):
             gt_pattern, pattern_dict, edited_pattern, edited_pattern_dict, editing_captions, captions = self.gt_cached[data_name]
         else:
             spec_file = os.path.join(self.root_path, datapoint_name, f'{data_name}_specification_shifted.json')
-            gt_pattern = NNSewingPattern(spec_file, panel_classifier=self.panel_classifier, template_name=self.template_name(datapoint_name))
+            gt_pattern = NNSewingPattern(spec_file, panel_classifier=self.panel_classifier, template_name=data_name)
             gt_pattern.name = data_name
             pattern_dict = self.garment_tokenizer.encode(gt_pattern)
             
@@ -210,7 +196,7 @@ class GarmentCodeDatasetQVA(Dataset):
                 edited_pattern_dict = None
                 editing_captions = None
             else:
-                edited_pattern = NNSewingPattern(editing_spec_file, panel_classifier=self.panel_classifier, template_name=self.template_name(datapoint_name))
+                edited_pattern = NNSewingPattern(editing_spec_file, panel_classifier=self.panel_classifier, template_name=data_name)
                 edited_pattern.name = data_name
                 edited_pattern_dict = self.garment_tokenizer.encode(edited_pattern)
                 editing_captions = json.load(open(editing_caption_json, 'r'))
@@ -226,12 +212,12 @@ class GarmentCodeDatasetQVA(Dataset):
             
         image_clip = torch.zeros((3, 224, 224))
         image_path = ''
-        sample_type = np.random.choice(5, p=self.sampling_rate)
-        if sample_type == 4 and edited_pattern is None:
-            sample_type = 0  # no editing if there is no edited pattern
-        if sample_type in [1, 2, 3] and captions is None:
-            sample_type = 0  # no text if there is no caption
-        if sample_type == 0:
+        sample_type = np.random.choice(list(DataType), p=self.sampling_rate)
+        if sample_type == DataType.EDITING and edited_pattern is None:
+            sample_type = DataType.IMAGE  # no editing if there is no edited pattern
+        if DataType.requires_text(sample_type) and captions is None:
+            sample_type = DataType.IMAGE  # no text if there is no caption
+        if sample_type == DataType.IMAGE:
             # image_only
             image_clip, image_path = self._parepare_image(image_paths)
             # questions and answers
@@ -245,7 +231,7 @@ class GarmentCodeDatasetQVA(Dataset):
             out_pattern_dict = pattern_dict
             question_pattern_dict = {}
             out_pattern = [gt_pattern]
-        elif sample_type == 1:
+        elif sample_type == DataType.DESCRIPTIVE_TEXT:
             # descriptive text_only
             descriptive_text = captions['description']
             # questions and answers
@@ -259,7 +245,7 @@ class GarmentCodeDatasetQVA(Dataset):
             out_pattern_dict = pattern_dict
             question_pattern_dict = {}
             out_pattern = [gt_pattern]
-        elif sample_type == 2:
+        elif sample_type == DataType.SPECULATIVE_TEXT:
             # speculative text_only
             speculative_text = captions['occasion']
             # questions and answers
@@ -273,7 +259,7 @@ class GarmentCodeDatasetQVA(Dataset):
             out_pattern_dict = pattern_dict
             question_pattern_dict = {}
             out_pattern = [gt_pattern]
-        elif sample_type == 3:
+        elif sample_type == DataType.IMAGE_TEXT:
             # image_text
             descriptive_text = captions['description']
             image_clip, image_path = self._parepare_image(image_paths)
@@ -288,7 +274,7 @@ class GarmentCodeDatasetQVA(Dataset):
             out_pattern_dict = pattern_dict
             question_pattern_dict = {}
             out_pattern = [gt_pattern]
-        elif sample_type == 4:
+        elif sample_type == DataType.EDITING:
             # garment_editing
             if random.random() > self.editing_flip_prob:
                 before_pattern_dict = pattern_dict
@@ -314,6 +300,8 @@ class GarmentCodeDatasetQVA(Dataset):
                 answers.append(answer_template)
             out_pattern_dict = {k: before_pattern_dict[k] + after_pattern_dict[k] for k in before_pattern_dict.keys()}
             question_pattern_dict = before_pattern_dict
+        else:
+            raise ValueError(f"Invalid sample type: {sample_type}")
 
         conversations = []
         question_only_convs = []
@@ -340,37 +328,12 @@ class GarmentCodeDatasetQVA(Dataset):
             question_only_convs,
             questions,
             out_pattern,
-            sample_type,
+            sample_type.value,
             self.inference
         ) 
         
     def evaluate_patterns(self, pred_patterns: List[NNSewingPattern], gt_patterns: List[NNSewingPattern]):
         return self.garment_tokenizer.evaluate_patterns(pred_patterns, gt_patterns)
-    
-    def _as_vertices(self, outlines, num_edges):
-        
-        
-        vertices = np.zeros(outlines.shape)
-        
-        valid_edges = outlines[num_edges > 0]
-        valid_vertices = outlines[num_edges > 0]
-
-        #vertices themselves
-        for i in range(valid_edges.shape[1]):
-            valid_vertices[:,i,:2] += valid_edges[:, i, :2]
-
-        # for control points 
-        for i in range(valid_edges.shape[0]):
-            for j in range(valid_edges.shape[1]):
-                if valid_edges[i, j, 2:4].sum() > 0:
-                    valid_vertices[i,j,2:4] = NNSewingPattern.control_to_abs_coord(valid_vertices[i,j,:2], valid_vertices[i,j+1,:2], valid_edges[i,j,2:4])
-                if valid_edges[i, j, 4:6].sum() > 0:
-                    valid_vertices[i,j,4:6] = NNSewingPattern.control_to_abs_coord(valid_vertices[i,j,:2], valid_vertices[i+1,j,:2], valid_edges[i,j,4:6])
-        
-        vertices[num_edges > 0] = valid_vertices
-        
-        return vertices
-
     
     def get_item_infos(self, index):
         return self.datapoints_names[index]

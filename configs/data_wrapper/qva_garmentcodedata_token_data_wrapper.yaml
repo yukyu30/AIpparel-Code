@@ -3,4 +3,4 @@ defaults:
   - dataset: qva_garment_token_dataset_garmentcodedata
 
 collate_fn: data.data_wrappers.collate_fns.collate_fn_regression
-split_file: assets/data_configs/garmentcodedata_datasplit_overfit_smaller.json
+split_file: assets/data_configs/garmentcodedata_datasplit.json

@@ -31,7 +31,6 @@ class WandbConfig:
 
 @dataclass
 class ExperimentConfig:
-    is_training: bool = True
     project_name: Optional[str] = None
     run_name: Optional[str] = None
     run_id: Optional[str] = None
@@ -112,7 +111,6 @@ class FinetuneLlavaTrainer():
         }
         self.start_step = 0
         
-
 
     def training_setup(
         self, 
@@ -579,18 +577,25 @@ class FinetuneLlavaTrainer():
                 anonymous='allow')
 
         if resume:
-            latest_path = os.path.join(resume, 'latest')
-            if os.path.isfile(latest_path):
-                with open(latest_path, 'r') as fd:
-                    tag = fd.read().strip()
-            else:
-                raise ValueError(f"Unable to find 'latest' file at {latest_path}")
+            if os.path.isdir(resume):
+                log.info("Reconstructing torch checkpoints from {}".format(resume))
+                latest_path = os.path.join(resume, 'latest')
+                if os.path.isfile(latest_path):
+                    with open(latest_path, 'r') as fd:
+                        tag = fd.read().strip()
+                else:
+                    raise ValueError(f"Unable to find 'latest' file at {latest_path}")
 
-            state_dict = get_fp32_state_dict_from_zero_checkpoint(resume, tag, exclude_frozen_parameters=True)
+                state_dict = get_fp32_state_dict_from_zero_checkpoint(resume, tag, exclude_frozen_parameters=True)
+                if not from_start:
+                    self.start_step = int(tag.replace("global_step", ""))
+            elif os.path.isfile(resume) and resume.endswith('.pth'):
+                log.info("Loading torch checkpoint from {}".format(resume))
+                state_dict = torch.load(resume, map_location='cpu')
+            else:
+                raise ValueError("Unknown checkpoint format: {}".format(resume))
             self.model_engine.module.load_state_dict(state_dict, strict=False)
-                
-            if not from_start:
-                self.start_step = int(tag.replace("global_step", ""))
+            
             master_log(
                 self.ddp_rank, 
                 log,
