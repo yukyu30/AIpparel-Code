@@ -14,7 +14,7 @@
 ![teaser](assets/imgs/teaser.jpg)
 
 ## Environment Setup
-We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you do not haven't done so. 
+We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you haven't done so. 
 
 After installing conda, create a new environment using 
 ```
@@ -37,12 +37,12 @@ export PYTHONPATH=$PYTHONPATH:/path/to/AIpparel-Code
 ## Dataset 
 
 
-Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., `garments_5000_xx`) into a common folder. Then change the _root\_dir_ [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
+Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., `garments_5000_xx`) into a common folder. Then change the `root_dir` [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
 
-Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (_gcd\_mm\_editing.zip_ and _gcd\_mm\_captions.zip_), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the _editing\_dir_ and _caption\_dir_ in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
+Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (`gcd_mm_editing.zip` and `gcd_mm_captions.zip`), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the `editing_dir` and `caption_dir` in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
 ## Pre-trained Model Weights
-Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (**aipparel_pretrained.pth**). To evaluate or generate sewing patterns using it, change the _(pre\_trained)_  entry in the [config](configs/aipparel.yaml) file to point to the the downloaded pre-trained weights.
+Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (`aipparel_pretrained.pth`). To evaluate or generate sewing patterns using it, change the `pre_trained`  entry in the [config](configs/aipparel.yaml) file to point to the the downloaded pre-trained weights.
 
 ## Logging
 We provide logging logistics using WANDB. Set your wandb info [here](configs/experiment/wandb_info/wandb.yaml) and login to your account through the command line.
@@ -51,7 +51,7 @@ We provide logging logistics using WANDB. Set your wandb info [here](configs/exp
 We provide evaluation scripts under [eval_scripts](eval_scripts). Change environment variables to set the visible GPU devices and the path to this repository. Metrics will be saved to Wandb, and generated outputs will be saved to the output directory (set in the [config](configs/aipparel.yaml)).
 
 ## Training
-For training, we provide a training script under train_scripts directory. Change environment variables to set the visible GPU devices and the path to this repository. Training logs will be saved to Wandb.
+For training, we provide a training script under [scripts](scripts) directory. Change environment variables to set the visible GPU devices and the path to this repository. Training logs will be saved to Wandb.
 
 ## Citation
 
