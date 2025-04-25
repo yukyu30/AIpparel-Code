@@ -29,6 +29,10 @@ Install the other dependencies via pip
 ```
 pip install -r requirements.txt
 ```
+Add the project directory to the PYTHONPATH 
+```
+export PYTHONPATH=$PYTHONPATH:/path/to/AIpparel-Code
+```
 
 ## Dataset 
 
