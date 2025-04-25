@@ -124,9 +124,8 @@ def main(cfg: MainConfig):
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
     if cfg.evaluate:
         trainer.eval_setup(config_dict, model, tokenizer, cfg.conv_type, resume=cfg.pre_trained)
-        # trainer.eval_step(trainer.start_step)
-        trainer.generation_step(trainer.start_step, subset="train")
-        # trainer.generation_step(trainer.start_step, subset="validation")
+        trainer.eval_step(trainer.start_step)
+        trainer.generation_step(trainer.start_step, subset="validation")
     else:
         trainer.training_setup(config_dict, model, tokenizer, cfg.conv_type, cfg.from_start, cfg.pre_trained)
         trainer.fit()

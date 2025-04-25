@@ -24,4 +24,4 @@ pre_trained: null
 storage_dir: null
 hydra:
   run:
-    dir: /miele/george/garment/sewformer/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ???
