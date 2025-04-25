@@ -4,9 +4,9 @@ defaults:
 _target_: data.datasets.gcd_mm_dataset.GCDMM
 
 
-root_dir: /miele/data/gcd/garmentcodedata
-editing_dir: /miele/data/gcd/garmentcodedata_editing
-caption_dir: /miele/data/gcd/long-caption-processed
+root_dir: ???
+editing_dir: ???
+caption_dir: ???
 # sampling_rate: [0,0,0,0,1]
 editing_flip_prob: 0.5
 sampling_rate: [0.3, 0.1, 0.1, 0.4, 0.1]
