@@ -37,7 +37,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/AIpparel-Code
 ## Dataset 
 
 
-Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., _garments\_5000\_xx_) into a common folder. Then change the _root\_dir_ [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
+Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., `garments_5000_xx`) into a common folder. Then change the _root\_dir_ [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
 
 Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (_gcd\_mm\_editing.zip_ and _gcd\_mm\_captions.zip_), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the _editing\_dir_ and _caption\_dir_ in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
