@@ -14,7 +14,7 @@
 ![teaser](assets/imgs/teaser.jpg)
 
 ## Environment Setup
-We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you do not haven't done so. 
+We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you haven't done so. 
 
 After installing conda, create a new environment using 
 ```
