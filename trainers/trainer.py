@@ -268,8 +268,6 @@ class Trainer():
             gen_len = len(self.val_loader)
         elif subset == "train":
             loader = self.train_val_loader
-            print(len(self.datawrapper.training))
-            print("Training set length is {}".format(len(self.train_val_loader)))
             gen_len = min(len(self.train_val_loader), 200)
         else:
             raise ValueError(f"Subset {subset} not supported")

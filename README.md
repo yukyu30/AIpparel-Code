@@ -23,7 +23,7 @@ Download the pre-trained AIpparel model weights [here](https://huggingface.co/ge
 We provide logging logistics using WANDB. Set your username [here](configs/experiment/wandb_info/wandb.yaml) and login to your account through the command line.
 
 ## Evaluation 
-We provide evaluation scripts under eval_scripts directory. Change environment variables to set the visible GPU devices and the path to this repository. Metrics will be saved to Wandb, and generated outputs will be saved to the output directory (set in the [config](configs/aipparel.yaml)).
+We provide evaluation scripts under [eval_scripts](eval_scripts). Change environment variables to set the visible GPU devices and the path to this repository. Metrics will be saved to Wandb, and generated outputs will be saved to the output directory (set in the [config](configs/aipparel.yaml)).
 
 ## Training
 For training, we provide a training script under train_scripts directory. Change environment variables to set the visible GPU devices and the path to this repository. Training logs will be saved to Wandb.
