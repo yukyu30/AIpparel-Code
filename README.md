@@ -31,13 +31,17 @@ pip install -r requirements.txt
 ```
 
 ## Dataset 
-Please download our [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (**gcd_mm_editing.zip** and **gcd_mm_captions.zip**), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions. Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
+
+
+Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., _(garments_5000_xx)_) into a common folder. Then change the _(root\_dir)_ [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
+
+Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (_(gcd\_mm\_editing.zip)_ and _(gcd\_mm\_captions.zip)_), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the _(editing\_dir)_ and _(caption\_dir)_ in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
 ## Pre-trained Model Weights
-Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (**aipparel_pretrained.pth**). To evaluate or generate sewing patterns using it, change the [config](configs/aipparel.yaml) _(pre\_trained)_ to point to the the downloaded pre-trained weights.
+Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (**aipparel_pretrained.pth**). To evaluate or generate sewing patterns using it, change the _(pre\_trained)_  entry in the [config](configs/aipparel.yaml) file to point to the the downloaded pre-trained weights.
 
 ## Logging
-We provide logging logistics using WANDB. Set your username [here](configs/experiment/wandb_info/wandb.yaml) and login to your account through the command line.
+We provide logging logistics using WANDB. Set your wandb info [here](configs/experiment/wandb_info/wandb.yaml) and login to your account through the command line.
 
 ## Evaluation 
 We provide evaluation scripts under [eval_scripts](eval_scripts). Change environment variables to set the visible GPU devices and the path to this repository. Metrics will be saved to Wandb, and generated outputs will be saved to the output directory (set in the [config](configs/aipparel.yaml)).
