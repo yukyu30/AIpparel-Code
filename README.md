@@ -37,12 +37,12 @@ export PYTHONPATH=$PYTHONPATH:/path/to/AIpparel-Code
 ## Dataset 
 
 
-Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., `garments_5000_xx`) into a common folder. Then change the `root_dir` [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to root directory. 
+Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) and place the different partitioned folders (i.e., `garments_5000_xx`) into a common folder. Then change the `root_dir` [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to common folder. 
 
 Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (`gcd_mm_editing.zip` and `gcd_mm_captions.zip`), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the `editing_dir` and `caption_dir` in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
 ## Pre-trained Model Weights
-Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (`aipparel_pretrained.pth`). To evaluate or generate sewing patterns using it, change the `pre_trained`  entry in the [config](configs/aipparel.yaml) file to point to the the downloaded pre-trained weights.
+Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (`aipparel_pretrained.pth`). To evaluate or generate sewing patterns using it, change the `pre_trained` entry in the [config](configs/aipparel.yaml) file to point to the downloaded pre-trained weights.
 
 ## Logging
 We provide logging logistics using WANDB. Set your wandb info [here](configs/experiment/wandb_info/wandb.yaml) and login to your account through the command line.
@@ -58,7 +58,7 @@ For training, we provide a training script under [scripts](scripts) directory. C
 If you are using our model or dataset in your project, consider citing our paper.
 
 ```
-@article{nakayama2024aipparel,
+@article{nakayama2025aipparel,
     title={AIpparel: A Large Multimodal Generative Model for Digital Garments}, 
     author={Kiyohiro Nakayama and Jan Ackermann and Timur Levent Kesdogan 
             and Yang Zheng and Maria Korosteleva and Olga Sorkine-Hornung and Leonidas Guibas
