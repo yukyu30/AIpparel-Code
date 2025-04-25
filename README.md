@@ -13,6 +13,23 @@
 
 ![teaser](assets/imgs/teaser.jpg)
 
+## Environment Setup
+We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you do not haven't done so. 
+
+After installing conda, create a new environment using 
+```
+conda create -n aipparel python=3.10 -y 
+conda activate aipparel
+```
+Install torch 2.3.1 (we tested using CUDA 12.1). 
+```
+pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+```
+Install the other dependencies via pip 
+```
+pip install -r requirements.txt
+```
+
 ## Dataset 
 Please download our [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (**gcd_mm_editing.zip** and **gcd_mm_captions.zip**), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions. Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
