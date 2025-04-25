@@ -58,7 +58,7 @@ For training, we provide a training script under [scripts](scripts) directory. C
 If you are using our model or dataset in your project, consider citing our paper.
 
 ```
-@article{nakayama2024aipparel,
+@article{nakayama2025aipparel,
     title={AIpparel: A Large Multimodal Generative Model for Digital Garments}, 
     author={Kiyohiro Nakayama and Jan Ackermann and Timur Levent Kesdogan 
             and Yang Zheng and Maria Korosteleva and Olga Sorkine-Hornung and Leonidas Guibas
