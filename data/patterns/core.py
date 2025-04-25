@@ -11,9 +11,9 @@ import random
 
 # My
 
-from data.patterns import rotation as rotation_tools
-from data.patterns.utils import arc_from_three_points, arc_rad_flags_to_three_point
-from data.garment_tokenizers.special_tokens import PanelEdgeType
+from . import rotation as rotation_tools
+from .utils import arc_rad_flags_to_three_point
+
 standard_filenames = [
     'specification',  # e.g. used by dataset generation
     'template', 
@@ -85,6 +85,13 @@ class BasicPattern(object):
 
         with open(self.spec_file, 'r') as f_json:
             self.spec = json.load(f_json)
+            if 'pattern' not in self.spec.keys():
+                self.spec = {
+                    'pattern': self.spec,
+                    'parameters': {},
+                    'parameter_order': [],
+                    'properties': {'curvature_coords': 'relative', 'normalize_panel_translation': False, 'normalized_edge_loops': True, 'units_in_meter': 100}
+                }
         self.pattern = self.spec['pattern']
         self.properties = self.spec['properties']  # mandatory part
 
@@ -191,9 +198,20 @@ class BasicPattern(object):
         ## encodings: quadratics can be summarized as cubics with the same control points
         ## circles have a single hot encoding for being circles, the last element 
         if 'curvature' in edge_dict:
+            if isinstance(edge_dict['curvature'], list):
+                # Convert to cubic for uniformity
+                # https://stackoverflow.com/questions/3162645/convert-a-quadratic-bezier-to-a-cubic-one
+                # NOTE: Assuming relative coor
+                cp = np.array(edge_dict['curvature'])
+                start, end = np.array([0, 0]), np.array([1, 0])
 
+                cubic_1 = start + 2. / 3. * (cp - start)
+                cubic_2 = end + 2. / 3. * (cp - end)
+
+                curvature = np.array(cubic_1.tolist() + 
+                                     cubic_2.tolist() + [0])
             # in case of an arc
-            if edge_dict['curvature']['type'] == 'circle':
+            elif edge_dict['curvature']['type'] == 'circle':
                 start_point, end_point = edge_verts[0], edge_verts[1]
                 params = edge_dict['curvature']['params']
                 _, _, local_coords = arc_rad_flags_to_three_point(start_point, end_point, params[0], params[1], params[2])
@@ -218,45 +236,6 @@ class BasicPattern(object):
                                      cubic_2.tolist() + [0])
 
         return np.concatenate([edge_vector, curvature])
-    
-    def _edge_as_vertices(self, vertices, edge_dict, is_last=False):
-        """Represent edge as vector of fixed length: 
-            * First 2 elements: Vector endpoint. 
-                Original edge endvertex positions can be restored if edge vector is added to the start point,
-                which in turn could be obtained from previous edges in the panel loop
-            * Next 2 elements: Curvature values 
-                Given in relative coordinates. With zeros if edge is not curved 
-
-        """
-        edge_verts = vertices[edge_dict['endpoints']]
-
-        ## encodings: quadratics can be summarized as cubics with the same control points
-        ## circles have a single hot encoding for being circles, the last element 
-        if 'curvature' in edge_dict:
-
-            # in case of an arc
-            if edge_dict['curvature']['type'] == 'circle':
-                start_point, end_point = edge_verts[0], edge_verts[1]
-                params = edge_dict['curvature']['params']
-                _, _, coords = arc_rad_flags_to_three_point(start_point, end_point, params[0], params[1], params[2], False)
-                out = (PanelEdgeType.ARC, np.concatenate([coords, end_point])) if not is_last else (PanelEdgeType.CLOSURE_ARC, coords)
-
-            # in case of a curve
-            elif edge_dict['curvature']['type'] == 'cubic':
-                out = (PanelEdgeType.CC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1]), edge_verts[1]])) \
-                     if not is_last else (PanelEdgeType.CLOSURE_CUBIC, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][1])]))
-                
-            elif edge_dict['curvature']['type'] == 'quadratic':
-                # Convert to cubic for uniformity
-                # https://stackoverflow.com/questions/3162645/convert-a-quadratic-bezier-to-a-cubic-one
-                # NOTE: Assuming relative coor
-                
-                out = (PanelEdgeType.CURVE, np.concatenate([BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]), edge_verts[1]])) \
-                    if not is_last else (PanelEdgeType.CLOSURE_CURVE, BasicPattern.control_to_abs_coord(edge_dict['curvature']['params'][0]))
-        else:
-            out = (PanelEdgeType.LINE, edge_verts[1]) if not is_last else (PanelEdgeType.CLOSURE_LINE, edge_verts[0])
-
-        return out
     
     @staticmethod
     def _point_in_3D(local_coord, rotation, translation):
@@ -1035,68 +1014,3 @@ class ParametrizedPattern(BasicPattern):
                 self.parameters[parameter]['value'] = values
             else:  # simple 1-value parameter
                 self.parameters[parameter]['value'] = self._new_value(param_ranges)
-
-
-# ---------- test -------------
-if __name__ == "__main__":
-
-    d = {"curvature": {"type": "circle","params": [  ]}}
-
-    # i = [9.842576793242815,44.92173865611404], [0.0,32.51198659765073], 10.108109448984525, False, False, False
-
-    print('test case 0 ,0')
-    a, b, c = arc_rad_flags_to_three_point(*i)
-    print(arc_from_three_points(a, b, c))
-    print(i)
-
-
-    i = [56.13447411641824, 0.6077871732441891], [-10.13447411641824, 0.6077871732441891], 33.20059322389004, True, False, False
-    print('test case 1 ,0')
-    a, b, c = arc_rad_flags_to_three_point(*i)
-    print(arc_from_three_points(a, b, c))
-    print(i)
-
-
-    i = [-10.8188, 49.9184584322704], [0.0, 44.269560024978844], 13.184560591816423, False, True, False
-    print('test case 0 ,1')
-    a, b, c = arc_rad_flags_to_three_point(*i)
-    print(arc_from_three_points(a, b, c))
-    print(i)
-
-    i = [-4.697426527043252, 1.1173990549831903], [26.697426527043252, 1.1173990549831903], 16.352399720562214, True, True, False
-    print('test case 1 ,1')
-    a, b, c = arc_rad_flags_to_three_point(*i)
-    print(arc_from_three_points(a, b, c))
-    print(i)
-
-    # from external import customconfig
-    # from pattern.wrappers import VisPattern
-
-    # # np.set_printoptions(precision=4, suppress=True)
-
-    # system_config = customconfig.Properties('./system.json')
-    # base_path = system_config['output']
-    # pattern = ParametrizedPattern(os.path.join(system_config['templates_path'], 'basic tee', 'tee_rotated.json'))
-    # # pattern = ParametrizedPattern(os.path.join(system_config['templates_path'], 'skirts', 'skirt_4_panels.json'))
-    # # pattern = BasicPattern(os.path.join(system_config['datasets_path'], 'data_1000_tee_200527-14-50-42_regen_200612-16-56-43', 'tee_8O9CU32Q8G', 'specification.json'))
-    # # pattern_init = BasicPattern(os.path.join(base_path, 'nn_pred_data_1000_tee_200527-14-50-42_regen_200612-16-56-43201106-14-46-31', 'test', 'tee_8O9CU32Q8G', 'specification.json'))
-    # # pattern_predicted = BasicPattern(os.path.join(base_path, 'nn_pred_data_1000_tee_200527-14-50-42_regen_200612-16-56-43201106-14-46-31', 'test', 'tee_8O9CU32Q8G', '_predicted_specification.json'))
-    # # pattern = VisPattern()
-    # empty_pattern = BasicPattern()
-    # print(pattern.panel_order())
-
-    # # print(pattern.stitches_as_tags())
-
-    # # print(len(pattern.pattern_as_tensors(with_placement=True, with_stitches=True, with_stitch_tags=True)))
-
-    # # tensor, num_panels, rot, transl, stitches, stitch_num, stitch_tags = pattern.pattern_as_tensors(with_placement=True, with_stitches=True, with_stitch_tags=True)
-
-    # # empty_pattern.pattern_from_tensors(tensor, rot, transl, stitches, padded=True)
-    # # print(pattern.pattern['stitches'])
-    # # print(empty_pattern.panel_order())
-
-    # pattern.name = pattern.name + '_save_pattern_order' + '_' + datetime.now().strftime('%y%m%d-%H-%M-%S')
-    # # empty_pattern.serialize(system_config['output'], to_subfolder=True)
-    # pattern.serialize(system_config['output'], to_subfolder=True)
-
-

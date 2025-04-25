@@ -1,0 +1,6 @@
+defaults:
+  - standardize: gcd_stats
+
+_target_: data.garment_tokenizers.gcd_garment_tokenizer.GCDGarmentTokenizer
+random_tag: True
+num_tags: 108

@@ -8,13 +8,21 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+# Correct dependencies on Win
+# https://stackoverflow.com/questions/46265677/get-cairosvg-working-in-windows
+# NOTE: I took the dlls from Inkscape
+# NOTE: paths are relative to the running location, not to the current file
+if 'Windows' in os.environ.get('OS',''):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    os.environ['path'] += f';{os.path.abspath(dir_path + "/cairo_dlls/")}'
+
 import cairosvg
 import svgpathtools as svgpath
 
 import matplotlib.pyplot as plt
 # my
-from data.patterns import core
-from data.patterns.utils import *
+from . import core
+from .utils import *
 
 
 class VisPattern(core.ParametrizedPattern):
@@ -44,18 +52,25 @@ class VisPattern(core.ParametrizedPattern):
 
     def serialize(
             self, path, to_subfolder=True, tag='', 
-            with_3d=True, with_text=True, view_ids=True, empty_ok=False):
+            with_3d=True, with_text=True, view_ids=True, empty_ok=False, spec_only=False):
 
         log_dir = super().serialize(path, to_subfolder, tag=tag, empty_ok=empty_ok)
         if len(self.panel_order()) == 0:  # If we are still here, but pattern is empty, don't generate an image
             return log_dir
-        
+        if spec_only:
+            return log_dir
+
+        # save visualtisation
         svg_file = os.path.join(log_dir, (self.name + tag + '_pattern.svg'))
         png_file = os.path.join(log_dir, (self.name + tag + '_pattern.png'))
         png_3d_file = os.path.join(log_dir, (self.name + tag + '_3d_pattern.png'))
 
         # save visualtisation
-        self._save_as_image(svg_file, png_file, with_text, view_ids)
+        try:
+            self._save_as_image(svg_file, png_file, with_text, view_ids)
+        except:
+            self._save_as_image(svg_file, png_file, False, False)
+            
         if with_3d:
             self._save_as_image_3D(png_3d_file)
 
@@ -211,7 +226,7 @@ class VisPattern(core.ParametrizedPattern):
         if with_text:
             text_insert = panel_center   # + np.array([-len(panel_name) * 12 / 2, 3])
             drawing.add(drawing.text(panel_name, insert=text_insert, 
-                        fill='rgb(31,31,31)', font_size='25', 
+                        fill='rgb(31,31,31)', font_size='12', 
                         text_anchor='middle', dominant_baseline='middle'))
 
         if view_ids:
@@ -221,7 +236,7 @@ class VisPattern(core.ParametrizedPattern):
                 ver = c_to_np(seg.start)
                 drawing.add(
                     drawing.text(str(idx), insert=ver, 
-                                 fill='rgb(245,96,66)', font_size='25'))
+                                 fill='rgb(245,96,66)', font_size='12'))
             # name edges
             for idx in range(len(path)):
                 seg = path[idx]
@@ -230,7 +245,7 @@ class VisPattern(core.ParametrizedPattern):
                 # name
                 drawing.add(
                     drawing.text(idx, insert=middle, 
-                                 fill='rgb(44,131,68)', font_size='20', 
+                                 fill='rgb(44,131,68)', font_size='12', 
                                  text_anchor='middle'))
 
     def _save_as_image(
@@ -389,32 +404,3 @@ class RandomPattern(VisPattern):
         """
         return ''.join(random.choices(chars, k=size))
 
-
-if __name__ == "__main__":
-    from datetime import datetime
-    import time
-
-    timestamp = int(time.time())
-    random.seed(timestamp)
-
-    system_config = customconfig.Properties('./system.json')
-    base_path = system_config['output']
-    # pattern = VisPattern(os.path.join(system_config['templates_path'], 'skirts', 'skirt_4_panels.json'))
-    # pattern = VisPattern(os.path.join(system_config['templates_path'], 'basic tee', 'tee.json'))
-    pattern = VisPattern(os.path.join(
-        base_path, 
-        'nn_pred_data_1000_tee_200527-14-50-42_regen_200612-16-56-43200803-10-10-41', 
-        'test', 'tee_00A2ZO1ELB', '_predicted_specification.json'))
-    # newpattern = RandomPattern(os.path.join(system_config['templates_path'], 'basic tee', 'tee.json'))
-
-    # log to file
-    log_folder = 'panel_vissize_' + datetime.now().strftime('%y%m%d-%H-%M-%S')
-    log_folder = os.path.join(base_path, log_folder)
-    os.makedirs(log_folder)
-
-    pattern.serialize(log_folder, to_subfolder=False)
-    # newpattern.serialize(log_folder, to_subfolder=False)
-
-    # log random seed
-    with open(log_folder + '/random_seed.txt', 'w') as f_rand:
-        f_rand.write(str(timestamp))

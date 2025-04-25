@@ -1,0 +1,7 @@
+_target_: data.data_wrappers.data_wrapper.DataWrapper
+_recursive_: False
+defaults:
+  - dataset: gcd_mm
+
+collate_fn: data.data_wrappers.collate_fns.collate_fn
+split_file: assets/data_configs/garmentcodedata_datasplit.json

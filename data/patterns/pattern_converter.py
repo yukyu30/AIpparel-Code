@@ -198,37 +198,7 @@ class NNSewingPattern(VisPattern):
         result.append(aug_panel_seqs)
         
         return tuple(result) if len(result) > 1 else result[0]
-    
-    def pattern_as_tokens(self,  rot_in_euler=False, with_placement=False, with_stitches=False):
-        """Return pattern in format suitable for NN inputs/outputs
-            * 3D tensor of panel edges
-            * 3D tensor of panel's 3D translations
-            * 3D tensor of panel's 3D rotations
-        Parameters to control padding: 
-            * pad_panels_to_len -- pad the list edges of every panel to this number of edges
-            * pad_panels_num -- pad the list of panels of the pattern to this number of panels
-        """
-        # get panel ordering
-        panel_order = self.panel_order(filter_nones=True)
-
-        # Main info per panel
-        panel_seqs, panel_translations, panel_rotations, panel_names = [], [], [], []
-        for panel_name in panel_order:
-            edges, rot, transl = self.panel_as_list(panel_name, rot_in_euler=rot_in_euler)
-            panel_seqs.append(edges)
-            panel_translations.append(transl)
-            panel_rotations.append(rot)
-            panel_names.append(panel_name)
-
-        # Stitches info. Order of stitches doesn't matter
-        stitches_num = len(self.pattern['stitches'])
-        if stitches_num < len(self.pattern['stitches']):
-            raise ValueError(
-                'BasicPattern::Error::requested number of stitches {} is less the number of stitches {} in pattern {}'.format(
-                    stitches_num, len(self.pattern['stitches']), self.name
-                ))
-
-        return panel_seqs, panel_translations, panel_rotations, panel_names, stitches_num, self.pattern['stitches']
+        
 
     def pattern_as_tensors(
             self, 
@@ -246,7 +216,7 @@ class NNSewingPattern(VisPattern):
             raise RuntimeError('BasicPattern::Error::pattern_as_tensors() is only supported for Python 3.6+ and Scipy 1.2+')
         
         # get panel ordering
-        panel_order = self.panel_order(pad_to_len=pad_panels_num)
+        panel_order = self.panel_order(pad_to_len=pad_panels_num, filter_nones=True)
 
         # Calculate max edge count among panels -- if not provided
         panel_lens = [len(self.pattern['panels'][name]['edges']) if name is not None else 0 for name in panel_order]
@@ -314,7 +284,7 @@ class NNSewingPattern(VisPattern):
         # format result as requested
         # Apply sparcity for more efficient memory use
         panel_seqs = np.stack(panel_seqs).reshape((-1, panel_seqs[0].shape[-1]))
-        result = [csr_matrix(panel_seqs), np.array(panel_lens)]
+        result = [panel_seqs, np.array(panel_lens)]
         result.append(len(self.pattern['panels']))  # actual number of panels 
         if with_placement:
             result.append(np.stack(panel_rotations))
@@ -328,13 +298,27 @@ class NNSewingPattern(VisPattern):
 
         # Apply sparcity for more efficient memory use
         aug_panel_seqs = np.array(aug_panel_seqs).reshape((-1, aug_panel_seqs[0].shape[-1]))
-        aug_panel_seqs = csr_matrix(aug_panel_seqs)
         result.append(aug_panel_seqs)  # for SewFormer losses
 
         return tuple(result) if len(result) > 1 else result[0]
 
-    
-    
+    def pattern_from_pattern_dict(self, pattern_dict):
+        if sys.version_info[0] < 3:
+            raise RuntimeError('BasicPattern::Error::pattern_from_tensors() is only supported for Python 3.6+ and Scipy 1.2+')
+
+        # Invalidate parameter & constraints values
+        self._invalidate_all_values()
+
+        # Assuming the input (from NN) follows the norm -- no updates will be made on further loads
+        self.properties.update(
+            curvature_coords='relative', 
+            normalize_panel_translation=False, 
+            normalized_edge_loops=True,
+            units_in_meter=100  # cm
+        )
+        self.pattern = pattern_dict
+        self.spec['pattern'] = pattern_dict
+
     def pattern_from_tensors(
             self, pattern_representation, 
             panel_rotations=None, panel_translations=None, stitches=None,
@@ -425,6 +409,8 @@ class NNSewingPattern(VisPattern):
         panel = self.pattern['panels'][panel_name]
         vertices = np.array(panel['vertices'])
         edge_sequence = [self._edge_as_vector(vertices, edge) for edge in panel["edges"]]
+        if len(edge_sequence) == 0:
+            raise EmptyPanelError()
         # padding if requested
         if pad_to_len is not None:
             if len(edge_sequence) > pad_to_len:
@@ -442,43 +428,6 @@ class NNSewingPattern(VisPattern):
         panel_rotation = scipy_rot.from_euler('xyz', panel['rotation'], degrees=True)  # pattern rotation follows the Maya convention: intrinsic xyz Euler Angles
         rotation_representation = np.array(panel_rotation.as_quat())
         return np.stack(edge_sequence, axis=0), rotation_representation, translation, aug_edges
-    
-    
-    def panel_as_list(self, panel_name, rot_in_euler=False):
-        """
-            Represent panel as sequence of edges with each edge as vector of fixed length plus the info on panel placement.
-            * Edges are returned in additive manner: 
-                each edge as a vector that needs to be added to previous edges to get a 2D coordinate of end vertex
-            * Panel translation is represented with "universal" heuristic -- as translation of midpoint of the top-most bounding box edge
-            * Panel rotation is returned as is but in quaternions
-
-            NOTE: 
-                The conversion uses the panels edges order as is, and 
-                DOES NOT take resposibility to ensure the same traversal order of panel edges is used across datapoints of similar garment type.
-                (the latter is done on sampling or on load)
-        """
-        if sys.version_info[0] < 3:
-            raise RuntimeError('BasicPattern::Error::panel_as_numeric() is only supported for Python 3.6+ and Scipy 1.2+')
-        
-        panel = self.pattern['panels'][panel_name]
-        vertices = np.array(panel['vertices'])
-        edge_sequence = [vertices[edge['endpoints']] for edge in panel["edges"]]
-        delta = edge_sequence[0][0].copy()
-        vertices -= delta  # shift to origin
-        all_edges = []
-        for i, edge in enumerate(edge_sequence):
-            out = self._edge_as_vertices(vertices, edge, is_last=i == len(edge_sequence) - 1) 
-            all_edges.append(out)
-            
-            
-        translation, _ = self._panel_universal_transtation(panel_name)
-
-        panel_rotation = scipy_rot.from_euler('xyz', panel['rotation'], degrees=True)  # pattern rotation follows the Maya convention: intrinsic xyz Euler Angles
-        if rot_in_euler:
-            return all_edges, np.array(panel['rotation']), translation
-        
-        rotation_representation = np.array(panel_rotation.as_quat())
-        return all_edges, rotation_representation, translation
     
     def _center_points_batch(self, starts, ends, control_scales):
         """

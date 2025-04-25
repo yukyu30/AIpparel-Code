@@ -1,8 +1,5 @@
-from enum import Enum
-
 import numpy as np
 import torch
-import torch.distributed as dist
 
 
 def discretize(params: np.ndarray, bin_size: int, shift: np.ndarray, scale: np.ndarray) -> np.ndarray:
@@ -99,3 +96,34 @@ ANSWER_LIST = [
     "The sewing pattern of the person is {pattern}.",
     "The sewing pattern of this person's garment is {pattern}.",
 ]
+
+
+
+# ------------------ Transforms ----------------
+def _dict_to_tensors(dict_obj):  # helper
+    """convert a dictionary with numeric values into a new dictionary with torch tensors"""
+    new_dict = dict.fromkeys(dict_obj.keys())
+    for key, value in dict_obj.items():
+        if value is None:
+            new_dict[key] = torch.Tensor()
+        elif isinstance(value, dict):
+            new_dict[key] = _dict_to_tensors(value)
+        elif isinstance(value, str):  # no changes for strings
+            new_dict[key] = value
+        elif isinstance(value, np.ndarray):
+            new_dict[key] = torch.from_numpy(value)
+
+            # TODO more stable way of converting the types (or detecting ints)
+            if value.dtype not in [int, np.int64, bool]:
+                new_dict[key] = new_dict[key].float()  # cast all doubles and other stuff to floats
+        else:
+            new_dict[key] = torch.tensor(value)  # just try directly, if nothing else works
+    return new_dict
+
+
+# Custom transforms -- to tensor
+class SampleToTensor(object):
+    """Convert ndarrays in sample to Tensors."""
+    
+    def __call__(self, sample):        
+        return _dict_to_tensors(sample)

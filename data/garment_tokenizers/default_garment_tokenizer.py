@@ -5,8 +5,7 @@ from typing import List, Tuple, Dict, Union, Any
 import logging 
 log = logging.getLogger(__name__)   
 from transformers import PreTrainedTokenizer
-from data.datasets.garmentcodedata.garmentcode_dataset import GarmentCodeData
-from data.datasets.garmentcodedata.pattern_converter import NNSewingPattern as GCD_NNSewingPattern, EmptyPanelError
+from data.patterns.pattern_converter import NNSewingPattern, EmptyPanelError
 from data.garment_tokenizers.utils import arc_rad_flags_to_three_point, control_to_abs_coord, discretize, control_to_relative_coord, arc_from_three_points, panel_universal_transtation, is_colinear
 from scipy.spatial.transform import Rotation
 from data.datasets.utils import IMAGE_TOKEN_INDEX
@@ -21,8 +20,6 @@ class GarmentTokenizer:
                  random_tag = True,
                  num_tags = 108,
                  convert_qradratic_to_cubic = False,
-                 sf_only=False,
-                 include_template_name=True,
                  encode_stitches_as_tags=True
                  ):
         self.bin_size = bin_size
@@ -31,10 +28,6 @@ class GarmentTokenizer:
         self.random_tag = random_tag
         self.convert_qradratic_to_cubic = convert_qradratic_to_cubic
         self.encode_stitches_as_tags = encode_stitches_as_tags
-        self.sf_only = sf_only 
-        self.include_template_name = include_template_name
-        if self.include_template_name:
-            assert self.sf_only, "include_template_name can only be used with sewfactory dataset"
             
         self.panel_edge_type_indices: Optional[PanelEdgeTypeIndices] = None
         self.special_token_indices: Optional[SpecialTokensIndices] = None
@@ -46,10 +39,7 @@ class GarmentTokenizer:
     
     def get_all_token_names(self):
         all_names = self.get_bin_token_names()
-        if not self.sf_only:
-            all_names += PanelEdgeType.list()
-        else:
-            all_names += PanelEdgeType.get_sewfactory_token()
+        all_names += PanelEdgeType.list()
         all_names += SpecialTokens.list()
         if self.encode_stitches_as_tags:
             all_names += self.get_stitch_tag_names()
@@ -111,18 +101,14 @@ class GarmentTokenizer:
                 new_stitch_dict[(stitch['panel'], stitch['edge'])] = tag_ids[stitch_id]
         return new_stitch_dict
     
-    def encode(self, pattern: GCD_NNSewingPattern):
+    def encode(self, pattern: NNSewingPattern):
         bin_tokens = self.get_bin_token_names() 
         if self.encode_stitches_as_tags:
             tag_tokens = self.get_stitch_tag_names()
             
         pattern_edges, panel_names, panel_rotations, panel_translations, stitches = self._pattern_as_list_gcd(pattern)
         stitches = self.assign_tags_to_stitches(stitches) if self.encode_stitches_as_tags else {}
-        if self.include_template_name:
-            template_name = pattern.name
-            out_description =  [template_name, SpecialTokens.PATTERN_START.value]
-        else:
-            out_description = [SpecialTokens.PATTERN_START.value]
+        out_description = [SpecialTokens.PATTERN_START.value]
         for panel_edges, panel_name, panel_tran, panel_rot in zip(pattern_edges, panel_names, panel_translations, panel_rotations):
             out_description += [SpecialTokens.PANEL_START.value, panel_name]
             trans_params = discretize(panel_tran.reshape(-1, 3), self.bin_size, self.gt_stats.translations.shift, self.gt_stats.translations.scale)
@@ -143,7 +129,7 @@ class GarmentTokenizer:
         out_description += [SpecialTokens.PATTERN_END.value]
         return {"description": [out_description]}
     
-    def _pattern_as_list_gcd(self, pattern: GCD_NNSewingPattern, as_quat=False, endpoint_first=False):
+    def _pattern_as_list_gcd(self, pattern: NNSewingPattern, as_quat=False, endpoint_first=False):
         panel_order = pattern.panel_order(filter_nones=True)
         all_panel_edges, panel_rotations, panel_translations = [], [], []
         for panel_name in panel_order:
@@ -235,7 +221,7 @@ class GarmentTokenizer:
 
         return vertices
     
-    def evaluate_patterns(self, pred_patterns: List[GCD_NNSewingPattern], gt_patterns: List[GCD_NNSewingPattern]):
+    def evaluate_patterns(self, pred_patterns: List[NNSewingPattern], gt_patterns: List[NNSewingPattern]):
         assert len(pred_patterns) == len(gt_patterns)
         total_num_panel_correct = torch.zeros(len(pred_patterns)).cuda()
         total_num_edge_acc = torch.ones(len(pred_patterns)).cuda() * -1
@@ -326,7 +312,7 @@ class GarmentTokenizer:
         garment_starts = np.where(
             np.logical_and(output_ids == self.special_token_indices.get_token_indices(SpecialTokens.PATTERN_START),
                            input_mask))[0]
-        pattern = GCD_NNSewingPattern()
+        pattern = NNSewingPattern()
         if len(garment_starts) != len(garment_ends) or \
             len(garment_starts) == 0 or \
             len(garment_ends) == 0 or \
@@ -507,36 +493,3 @@ class GarmentTokenizer:
 
         pattern['stitches'] = [stitches for stitches in edge_stitches.values() if len(stitches) == 2]
         return pattern, DecodeErrorTypes.NO_ERROR
-
-if __name__ == "__main__":
-    root_dir = "/miele/timur/garmentcodedata"
-    dataset = GarmentCodeData(root_dir, start_config={'random_pairs_mode': False, 'body_type' : 'default_body',
-                        'panel_classification' : '/home/timur/sewformer-garments/garment-estimator/nn/data_configs/panel_classes.json',
-                        'max_pattern_len' : 37,                            
-                        'max_panel_len' : 40,
-                        'max_num_stitches' : 108,
-                        'mesh_samples' : 2000, 
-                        'max_datapoints_per_folder' : 10,                          
-                        'stitched_edge_pairs_num': 100, 'non_stitched_edge_pairs_num': 100,
-                        'shuffle_pairs': False, 'shuffle_pairs_order': False, 
-                        'data_folders': [
-                        "garments_5000_0",
-                        # "garments_5000_1", "garments_5000_2", "garments_5000_3", "garments_5000_4", "garments_5000_5", "garments_5000_6", "garments_5000_7", "garments_5000_8"
-                        ]})
-    
-    conf = StandardizeConfig(
-        outlines=StatsConfig(shift=[-51.205456, -49.627438, 0.0, -0.35, 0.0, -0.35, 0.0], scale=[104.316666, 99.264435, 0.5, 0.7, 0.8, 0.7, 1.0]),
-        rotations=StatsConfig(shift=[0, 0], scale=[0.5, 0.5]),
-        stitch_tags=StatsConfig(shift=[0, 0], scale=[0., 0.5]),
-        translations=StatsConfig(shift=[0, 0], scale=[0.5, 0.5]),
-        vertices=StatsConfig(shift=[-30, -70], scale=[190, 180])
-    )
-
-    garment_code = DefaultGarmentCode(standardize=conf)
-    tokens = garment_code.encode(dataset, 0)
-
-    print(tokens)
-
-    tensor, names, description = garment_code.decode(np.array(tokens))
-
-    import code; code.interact(local=locals())

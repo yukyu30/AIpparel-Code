@@ -1,0 +1,11 @@
+use_mm_start_end: True
+edge_loss_weight: 0.1
+pos_embed: true
+num_freq: 0
+pos_embed_type: sinusoidal
+verts_bounds: [-4, -4, 4, 4]
+transf_bounds: [-4, -4, -4, -1, -1, -1, -1, 4, 4, 4, 1, 1, 1, 1]
+denormalize_for_loss: false
+num_regression_layers: 2
+discretize: True 
+bin_num: 256

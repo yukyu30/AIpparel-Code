@@ -1,0 +1,4 @@
+defaults:
+  - rotations: gcd_rotation_stats
+  - translations: gcd_transl_stats
+  - vertices: gcd_verts_stats

@@ -3,8 +3,8 @@ export  CUDA_VISIBLE_DEVICES=5,7,8
 export PYTHONPATH=/home/w4756677/garment/AIpparel-Code 
 
 torchrun --standalone --nnodes=1 --nproc_per_node=3 eval_scripts/eval_llava.py \
- experiment.project_name=GPT2 \
- experiment.run_name=aipparel.eval \
+ experiment.project_name=AIpparel \
+ experiment.run_name=eval_image_text \
  'data_wrapper.dataset.sampling_rate=[0,0,0,1,0]' \
  pre_trained=/miele/george/garment/aipparel_pretrained.pth \
  gen_only=True eval_val=False eval_train=True \
