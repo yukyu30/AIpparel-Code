@@ -14,7 +14,7 @@
 ![teaser](assets/imgs/teaser.jpg)
 
 ## Dataset 
-Download our GarmentCodeData-Multimodal dataset [here](https://huggingface.co/georgeNakayama/AIpparel), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions (**gcd_mm_editing.zip** and **gcd_mm_captions.zip**). Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directory.
+Please download our [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (**gcd_mm_editing.zip** and **gcd_mm_captions.zip**), which annotates [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500.11850/673889) with editing instructions and textual descriptions. Unzip the downloaded zip file and change the dataset [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
 ## Pre-trained Model Weights
 Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (**aipparel_pretrained.pth**). To evaluate or generate sewing patterns using it, change the [config](configs/aipparel.yaml) _(pre\_trained)_ to point to the the downloaded pre-trained weights.
