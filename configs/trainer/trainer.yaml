@@ -5,4 +5,4 @@ beta2: 0.95
 grad_accumulation_steps: 10
 batch_size: 2
 num_steps: 12750
-save_freq: 1
+save_freq: 1000
