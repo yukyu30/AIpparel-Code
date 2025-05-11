@@ -388,7 +388,7 @@ class Trainer():
             / max((stitch_accs != -1).sum(), 1)
         
         all_sample_types = np.array(all_sample_types)
-        for i, mode in enumerate(self.datawrapper.dataset.get_mode_names()):
+        for i, mode in enumerate(self.datawrapper.get_mode_names()):
             mode_mask = all_sample_types == i
             mode_mask = torch.from_numpy(mode_mask).to(num_edge_accs).bool()
             if not mode_mask.any():
