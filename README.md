@@ -41,6 +41,8 @@ Download [GarmentCodeData](https://www.research-collection.ethz.ch/handle/20.500
 
 Download the [GarmentCodeData-Multimodal dataset](https://huggingface.co/georgeNakayama/AIpparel) (`gcd_mm_editing.zip` and `gcd_mm_captions.zip`), which annotates GarmentCodeData with editing instructions and textual descriptions. Change the `editing_dir` and `caption_dir` in the [config file](configs/data_wrapper/dataset/gcd_mm.yaml) to point to the unzipped directories. 
 
+Run the sewing pattern [preprocessing script](shift_specs.py) to generate the shifted sewing patterns for training and evaluation. 
+
 ## Pre-trained Model Weights
 Download the pre-trained AIpparel model weights [here](https://huggingface.co/georgeNakayama/AIpparel) (`aipparel_pretrained.pth`). To evaluate or generate sewing patterns using it, change the `pre_trained` entry in the [config](configs/aipparel.yaml) file to point to the downloaded pre-trained weights.
 
