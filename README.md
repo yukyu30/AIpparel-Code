@@ -61,7 +61,7 @@ If you are using our model or dataset in your project, consider citing our paper
 
 ```
 @article{nakayama2025aipparel,
-    title={AIpparel: A Large Multimodal Generative Model for Digital Garments}, 
+    title={AIpparel: A Multimodal Foundation Model for Digital Garments}, 
     author={Kiyohiro Nakayama and Jan Ackermann and Timur Levent Kesdogan 
             and Yang Zheng and Maria Korosteleva and Olga Sorkine-Hornung and Leonidas Guibas
             and Guandao Yang and Gordon Wetzstein},
