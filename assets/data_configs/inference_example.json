@@ -1,0 +1,15 @@
+[
+    {
+        "type": "image",
+        "inputs": {
+            "image_path": "assets/imgs/dress.png"
+        }
+    },
+    {
+        "type": "description",
+        "inputs": {
+            "description": "A dress with a square neckline and a pleated skirt"
+        }
+    }
+    
+]
