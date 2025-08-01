@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+aipparel_pretrained_v1.pth
+.gitignore
+aipparel_pretrained.pth

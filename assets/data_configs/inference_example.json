@@ -2,13 +2,13 @@
     {
         "type": "image",
         "inputs": {
-            "image_path": "assets/imgs/dress.png"
+            "image_path": "assets/imgs/t.jpg"
         }
     },
     {
         "type": "description",
         "inputs": {
-            "description": "A dress with a square neckline and a pleated skirt"
+            "description": "simple t-shirt accent orange line"
         }
     }
     

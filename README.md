@@ -14,6 +14,55 @@
 ![teaser](assets/imgs/teaser.jpg)
 
 ## Environment Setup
+
+### Option 1: Using uv (Recommended)
+We recommend using [uv](https://github.com/astral-sh/uv) for faster and more reliable dependency management.
+
+#### Linux/macOS
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment with Python 3.10
+uv venv --python 3.10
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install PyTorch with CUDA 12.1
+uv pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+
+# Install other dependencies
+uv pip install -r requirements.txt
+
+# Add project directory to PYTHONPATH
+export PYTHONPATH=$PYTHONPATH:/path/to/AIpparel-Code
+```
+
+#### Windows
+```bash
+# Install uv
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Create virtual environment with Python 3.10
+uv venv --python 3.10
+
+# Activate virtual environment
+.venv\Scripts\activate
+
+# Install PyTorch with CUDA 12.1
+uv pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+
+# Install other dependencies (excluding DeepSpeed and flash_attn on Windows)
+uv pip install -r requirements.txt
+
+# Set PYTHONPATH
+set PYTHONPATH=%PYTHONPATH%;C:\path\to\AIpparel-Code
+```
+
+**Note for Windows users**: DeepSpeed and flash_attn may fail to install on Windows due to build issues. These packages are optional for inference tasks but required for training. For training, we recommend using WSL2 or a Linux environment.
+
+### Option 2: Using conda (Traditional method)
 We use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage our environment. Please install it if you haven't done so. 
 
 After installing conda, create a new environment using 
@@ -23,7 +72,7 @@ conda activate aipparel
 ```
 Install torch 2.3.1 (we tested using CUDA 12.1). 
 ```
-pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu129
 ```
 Install the other dependencies via pip 
 ```

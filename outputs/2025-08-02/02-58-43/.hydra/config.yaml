@@ -1,0 +1,70 @@
+model:
+  use_mm_start_end: true
+  edge_loss_weight: 0.1
+  pos_embed: true
+  num_freq: 0
+  pos_embed_type: sinusoidal
+  verts_bounds:
+  - -4
+  - -4
+  - 4
+  - 4
+  transf_bounds:
+  - -4
+  - -4
+  - -4
+  - -1
+  - -1
+  - -1
+  - -1
+  - 4
+  - 4
+  - 4
+  - 1
+  - 1
+  - 1
+  - 1
+  denormalize_for_loss: false
+  num_regression_layers: 2
+  discretize: true
+  bin_num: 256
+garment_tokenizer:
+  standardize:
+    rotations:
+      scale:
+      - 1
+      - 1
+      - 1
+      - 1
+      shift:
+      - 0
+      - 0
+      - 0
+      - 0
+    translations:
+      scale:
+      - 26.06867645
+      - 32.42920198
+      - 22.29905009
+      shift:
+      - -0.0125378371
+      - 113.507532
+      - 2.63046369
+    vertices:
+      scale:
+      - 24.4920733
+      - 26.60402835
+      shift:
+      - 8.44428116
+      - 16.84081321
+  _target_: data.garment_tokenizers.gcd_garment_tokenizer.GCDGarmentTokenizer
+  random_tag: true
+  num_tags: 108
+model_max_length: 2100
+version: liuhaotian/llava-v1.5-7b
+precision: bf16
+conv_type: llava_v1
+pre_trained: aipparel_pretrained_v1.pth
+inference_json: assets/data_configs/inference_example.json
+vision_tower: openai/clip-vit-large-patch14
+panel_classification: assets/data_configs/panel_classes_garmentcodedata.json
